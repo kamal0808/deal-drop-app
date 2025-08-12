@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Search, Heart, MessageCircle, Share2 } from "lucide-react";
+import { MapPin, Heart, MessageCircle, Share2, BadgeCheck } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import img1 from "@/assets/feed1.jpg";
 import img2 from "@/assets/feed2.jpg";
@@ -8,25 +8,16 @@ import img4 from "@/assets/feed4.jpg";
 import img5 from "@/assets/feed5.jpg";
 import img6 from "@/assets/feed6.jpg";
 import BottomNav from "@/components/BottomNav";
+import CategoryMenu from "@/components/CategoryMenu";
+import RotatingSearch from "@/components/RotatingSearch";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { Link } from "react-router-dom";
 
-const categories = [
-  { name: "All", color: "brand" },
-  { name: "Electronics", color: "primary" },
-  { name: "Clothing", color: "accent" },
-  { name: "Sports", color: "secondary" },
-  { name: "Watches", color: "muted" },
-  { name: "Beauty", color: "destructive" },
-  { name: "Grocery", color: "primary" },
-  { name: "Home", color: "accent" },
-  { name: "Kids", color: "secondary" },
-  { name: "Footwear", color: "muted" },
-];
 
-const placeholders = ["Green Shoes", "White T-shirt", "Michael Kors Watches"];
+
 
 type Post = {
   id: string;
@@ -34,59 +25,20 @@ type Post = {
   offer: string;
   store: string;
   description: string;
-  logoText: string; // initials
+  logoUrl: string;
+  sellerSlug: string;
 };
 
 const initialPosts: Post[] = [
-  { id: "1", image: img1, offer: "SALE 40%", store: "Trendy Threads", description: "Pastel fits for summer. Breathable and comfy cotton linens with seasonal palette. Limited time offers across sizes.", logoText: "TT" },
-  { id: "2", image: img2, offer: "BUY 1 GET 1", store: "ElectroHub", description: "Headphones, earbuds and smart accessories. Grab the BOGO while stocks last. Noise-cancelling selections included.", logoText: "EH" },
-  { id: "3", image: img3, offer: "SALE 30%", store: "Sportify", description: "High-energy activewear and kicks for every game day. Seasonal markdowns on jerseys and performance shoes.", logoText: "SP" },
-  { id: "4", image: img4, offer: "10% OFF", store: "Time & Co.", description: "Lux watch curation with timeless designs. Subtle reductions on select collections — upgrade your wrist game.", logoText: "TC" },
-  { id: "5", image: img5, offer: "NEW ARRIVALS", store: "Pastel House", description: "Fresh silhouettes in calming tones. Discover soft textures and layer-friendly picks for the week.", logoText: "PH" },
-  { id: "6", image: img6, offer: "FESTIVE OFFER", store: "GlowLab", description: "Skincare and cosmetics bundled for festive glow. Handpicked lip shades and serum combos.", logoText: "GL" },
+  { id: "1", image: img1, offer: "SALE 40%", store: "Trendy Threads", description: "Pastel fits for summer. Breathable and comfy cotton linens with seasonal palette. Limited time offers across sizes.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/4/44/H%26M-Logo.svg", sellerSlug: "trendy-threads" },
+  { id: "2", image: img2, offer: "BUY 1 GET 1", store: "ElectroHub", description: "Headphones, earbuds and smart accessories. Grab the BOGO while stocks last. Noise-cancelling selections included.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg", sellerSlug: "electrohub" },
+  { id: "3", image: img3, offer: "SALE 30%", store: "Sportify", description: "High-energy activewear and kicks for every game day. Seasonal markdowns on jerseys and performance shoes.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/3/36/Adidas_Logo.svg", sellerSlug: "sportify" },
+  { id: "4", image: img4, offer: "10% OFF", store: "Time & Co.", description: "Lux watch curation with timeless designs. Subtle reductions on select collections — upgrade your wrist game.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/2/29/Rolex_Logo.svg", sellerSlug: "time-co" },
+  { id: "5", image: img5, offer: "NEW ARRIVALS", store: "Pastel House", description: "Fresh silhouettes in calming tones. Discover soft textures and layer-friendly picks for the week.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Zara_Logo.svg", sellerSlug: "pastel-house" },
+  { id: "6", image: img6, offer: "FESTIVE OFFER", store: "GlowLab", description: "Skincare and cosmetics bundled for festive glow. Handpicked lip shades and serum combos.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/7d/Sephora_Logo.svg", sellerSlug: "glowlab" },
 ];
 
-const CategoryMenu = () => (
-  <nav className="w-full overflow-x-auto no-scrollbar" aria-label="Categories">
-    <ul className="flex gap-4 py-2">
-      {categories.map((c) => {
-        const map = {
-          brand: "bg-brand text-brand-foreground",
-          primary: "bg-primary text-primary-foreground",
-          accent: "bg-accent text-accent-foreground",
-          secondary: "bg-secondary text-secondary-foreground",
-          muted: "bg-muted text-muted-foreground",
-          destructive: "bg-destructive text-destructive-foreground",
-        } as const;
-        const colorClass = map[c.color as keyof typeof map];
-        return (
-          <li key={c.name} className="flex-shrink-0">
-            <button className="flex flex-col items-center justify-center w-16">
-              <span className={`h-10 w-10 rounded-full grid place-items-center shadow ${colorClass}`}>
-                {c.name.charAt(0)}
-              </span>
-              <span className="mt-1 text-xs text-muted-foreground">{c.name}</span>
-            </button>
-          </li>
-        );
-      })}
-    </ul>
-  </nav>
-);
 
-const RotatingSearch = () => {
-  const [idx, setIdx] = useState(0);
-  useEffect(() => {
-    const t = setInterval(() => setIdx((i) => (i + 1) % placeholders.length), 2000);
-    return () => clearInterval(t);
-  }, []);
-  return (
-    <div className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-      <Input className="pl-9" placeholder={placeholders[idx]} aria-label="Search products" />
-    </div>
-  );
-};
 
 const FeedPost = ({ post }: { post: Post }) => {
   const [liked, setLiked] = useState(false);
@@ -138,14 +90,16 @@ const FeedPost = ({ post }: { post: Post }) => {
         {/* Bottom glass panel */}
         <div className={`absolute inset-x-0 bottom-0 p-3 transition-all ${expanded ? 'h-1/2' : 'h-1/4'} glass`}> 
           <div className="flex items-center justify-between">
-            <div className="text-sm font-medium">{post.store}</div>
+            <Link to={`/seller/${post.sellerSlug}`} className="text-sm font-medium text-primary-foreground flex items-center gap-1"><BadgeCheck className="text-primary-foreground" size={14} /> {post.store}</Link>
             <Button size="sm" variant={following ? 'secondary' : 'default'} onClick={() => setFollowing(f => !f)}>
               {following ? 'Following' : 'Follow'}
             </Button>
           </div>
           <div className="mt-3 flex gap-3 items-start">
-            <div className="shrink-0 h-9 w-9 rounded-full bg-brand text-brand-foreground grid place-items-center text-xs font-bold">{post.logoText}</div>
-            <button className="text-left text-sm text-secondary-foreground/90" onClick={() => setExpanded(e => !e)} aria-expanded={expanded}>
+            <Link to={`/seller/${post.sellerSlug}`} className="shrink-0 h-9 w-9 rounded-full bg-brand text-brand-foreground grid place-items-center overflow-hidden">
+              <img src={post.logoUrl} alt={`${post.store} logo`} className="h-9 w-9 object-contain p-1" />
+            </Link>
+            <button className="text-left text-sm text-primary-foreground" onClick={() => setExpanded(e => !e)} aria-expanded={expanded}>
               <span className={`${expanded ? '' : 'line-clamp-3'}`}>{post.description}</span>
               <span className="ml-1 opacity-80">{expanded ? ' Show less' : ' …more'}</span>
             </button>
@@ -211,7 +165,7 @@ const Home = () => {
         <CategoryMenu />
       </section>
 
-      <section className="mt-2 px-3 space-y-4">
+      <section className="mt-2 px-5 space-y-4">
         {posts.map((p) => (
           <FeedPost key={p.id} post={p} />
         ))}

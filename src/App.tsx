@@ -7,6 +7,8 @@ import Landing from "./pages/Landing";
 import Home from "./pages/Home";
 import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
+import Discover from "./pages/Discover";
+import Seller from "./pages/Seller";
 
 const queryClient = new QueryClient();
 
@@ -19,9 +21,10 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Landing />} />
           <Route path="/home" element={<Home />} />
-          <Route path="/discover" element={<ComingSoon title="Discover" path="/discover" />} />
+          <Route path="/discover" element={<Discover />} />
           <Route path="/community" element={<ComingSoon title="Community" path="/community" />} />
           <Route path="/profile" element={<ComingSoon title="Profile" path="/profile" />} />
+          <Route path="/seller/:sellername" element={<Seller />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="/index" element={<Navigate to="/" replace />} />
           <Route path="*" element={<NotFound />} />
