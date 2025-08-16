@@ -5,10 +5,11 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
-import ComingSoon from "./pages/ComingSoon";
 import NotFound from "./pages/NotFound";
 import Discover from "./pages/Discover";
 import Seller from "./pages/Seller";
+import Community from "./pages/Community";
+import Profile from "./pages/Profile";
 
 const queryClient = new QueryClient();
 
@@ -22,8 +23,8 @@ const App = () => (
           <Route path="/" element={<Landing />} />
           <Route path="/home" element={<Home />} />
           <Route path="/discover" element={<Discover />} />
-          <Route path="/community" element={<ComingSoon title="Community" path="/community" />} />
-          <Route path="/profile" element={<ComingSoon title="Profile" path="/profile" />} />
+          <Route path="/community" element={<Community />} />
+          <Route path="/profile" element={<Profile />} />
           <Route path="/seller/:sellername" element={<Seller />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
           <Route path="/index" element={<Navigate to="/" replace />} />

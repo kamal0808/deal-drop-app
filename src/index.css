@@ -126,4 +126,13 @@ All colors MUST be HSL.
   .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .no-scrollbar { scrollbar-width: none; } 
   .no-scrollbar::-webkit-scrollbar { display: none; }
+  
+  @keyframes slide-up {
+    from { transform: translateY(100%); }
+    to { transform: translateY(0); }
+  }
+  
+  .animate-slide-up {
+    animation: slide-up 0.3s ease-out;
+  }
 }
