@@ -1,23 +1,111 @@
-import { LucideIcon, Laptop, Shirt, Dumbbell, Watch, Sparkles, ShoppingBasket, Home, Baby, Footprints, Palette } from "lucide-react";
+import { useEffect, useState } from "react";
+import { LucideIcon, Sparkles, Tag } from "lucide-react";
+import * as LucideIcons from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 
-const categories: { name: string; color: "brand" | "primary" | "accent" | "secondary" | "muted" | "destructive"; Icon: LucideIcon }[] = [
-  { name: "All", color: "brand", Icon: Sparkles },
-  { name: "Electronics", color: "primary", Icon: Laptop },
-  { name: "Clothing", color: "accent", Icon: Shirt },
-  { name: "Sports", color: "secondary", Icon: Dumbbell },
-  { name: "Watches", color: "muted", Icon: Watch },
-  { name: "Beauty", color: "destructive", Icon: Palette },
-  { name: "Grocery", color: "primary", Icon: ShoppingBasket },
-  { name: "Home", color: "accent", Icon: Home },
-  { name: "Kids", color: "secondary", Icon: Baby },
-  { name: "Footwear", color: "muted", Icon: Footprints },
+type Category = Tables<'categories'>;
+type CategoryWithIcon = Category & {
+  Icon: LucideIcon;
+  color: "brand" | "primary" | "accent" | "secondary" | "muted" | "destructive";
+};
+
+// Color mapping for categories - cycles through available colors
+const colorOptions: ("brand" | "primary" | "accent" | "secondary" | "muted" | "destructive")[] = [
+  "brand", "primary", "accent", "secondary", "muted", "destructive"
 ];
 
+const getColorForCategory = (index: number): "brand" | "primary" | "accent" | "secondary" | "muted" | "destructive" => {
+  return colorOptions[index % colorOptions.length];
+};
+
+const getIconComponent = (iconName: string): LucideIcon => {
+  const IconComponent = (LucideIcons as any)[iconName];
+  return IconComponent || Tag;
+};
+
 export default function CategoryMenu() {
+  const [categories, setCategories] = useState<CategoryWithIcon[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchCategories();
+  }, []);
+
+  const fetchCategories = async () => {
+    try {
+      setLoading(true);
+
+      // Fetch categories from Supabase
+      const { data, error } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      // Add "All" category at the beginning
+      const allCategory: CategoryWithIcon = {
+        id: 'all',
+        name: 'All',
+        icon: 'Sparkles',
+        created_at: null,
+        updated_at: null,
+        Icon: Sparkles,
+        color: 'brand'
+      };
+
+      // Transform categories with icons and colors
+      const transformedCategories: CategoryWithIcon[] = [
+        allCategory,
+        ...(data || []).map((category, index) => ({
+          ...category,
+          Icon: getIconComponent(category.icon),
+          color: getColorForCategory(index + 1) // +1 because "All" takes index 0
+        }))
+      ];
+
+      setCategories(transformedCategories);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Fallback to "All" category if there's an error
+      setCategories([{
+        id: 'all',
+        name: 'All',
+        icon: 'Sparkles',
+        created_at: null,
+        updated_at: null,
+        Icon: Sparkles,
+        color: 'brand'
+      }]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <nav className="w-full overflow-x-auto no-scrollbar" aria-label="Categories">
+        <ul className="flex gap-4 py-2">
+          {[...Array(6)].map((_, index) => (
+            <li key={index} className="flex-shrink-0">
+              <div className="flex flex-col items-center justify-center w-16">
+                <div className="h-10 w-10 rounded-full bg-muted animate-pulse" />
+                <div className="mt-1 h-3 w-8 bg-muted rounded animate-pulse" />
+              </div>
+            </li>
+          ))}
+        </ul>
+      </nav>
+    );
+  }
+
   return (
     <nav className="w-full overflow-x-auto no-scrollbar" aria-label="Categories">
       <ul className="flex gap-4 py-2">
-        {categories.map(({ name, color, Icon }) => {
+        {categories.map(({ id, name, color, Icon }) => {
           const map = {
             brand: "bg-brand text-brand-foreground",
             primary: "bg-primary text-primary-foreground",
@@ -28,7 +116,7 @@ export default function CategoryMenu() {
           } as const;
           const colorClass = map[color];
           return (
-            <li key={name} className="flex-shrink-0">
+            <li key={id} className="flex-shrink-0">
               <button className="flex flex-col items-center justify-center w-16">
                 <span className={`h-10 w-10 rounded-full grid place-items-center shadow ${colorClass}`}>
                   <Icon size={18} />
