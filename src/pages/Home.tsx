@@ -1,12 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { MapPin, Heart, MessageCircle, Share2, BadgeCheck } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
-import img1 from "@/assets/feed1.jpg";
-import img2 from "@/assets/feed2.jpg";
-import img3 from "@/assets/feed3.jpg";
-import img4 from "@/assets/feed4.jpg";
-import img5 from "@/assets/feed5.jpg";
-import img6 from "@/assets/feed6.jpg";
 import BottomNav from "@/components/BottomNav";
 import CategoryMenu from "@/components/CategoryMenu";
 import RotatingSearch from "@/components/RotatingSearch";
@@ -15,10 +9,19 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 
+// Database types
+type DatabasePost = Tables<'posts'>;
+type DatabaseBusiness = Tables<'businesses'>;
 
+// Combined type for posts with business information
+type PostWithBusiness = DatabasePost & {
+  business: DatabaseBusiness;
+};
 
-
+// UI Post type for the feed
 type Post = {
   id: string;
   image: string;
@@ -28,15 +31,6 @@ type Post = {
   logoUrl: string;
   sellerSlug: string;
 };
-
-const initialPosts: Post[] = [
-  { id: "1", image: img1, offer: "SALE 40%", store: "Trendy Threads", description: "Pastel fits for summer. Breathable and comfy cotton linens with seasonal palette. Limited time offers across sizes.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/4/44/H%26M-Logo.svg", sellerSlug: "trendy-threads" },
-  { id: "2", image: img2, offer: "BUY 1 GET 1", store: "ElectroHub", description: "Headphones, earbuds and smart accessories. Grab the BOGO while stocks last. Noise-cancelling selections included.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg", sellerSlug: "electrohub" },
-  { id: "3", image: img3, offer: "SALE 30%", store: "Sportify", description: "High-energy activewear and kicks for every game day. Seasonal markdowns on jerseys and performance shoes.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/3/36/Adidas_Logo.svg", sellerSlug: "sportify" },
-  { id: "4", image: img4, offer: "10% OFF", store: "Time & Co.", description: "Lux watch curation with timeless designs. Subtle reductions on select collections — upgrade your wrist game.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/2/29/Rolex_Logo.svg", sellerSlug: "time-co" },
-  { id: "5", image: img5, offer: "NEW ARRIVALS", store: "Pastel House", description: "Fresh silhouettes in calming tones. Discover soft textures and layer-friendly picks for the week.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/2/2f/Zara_Logo.svg", sellerSlug: "pastel-house" },
-  { id: "6", image: img6, offer: "FESTIVE OFFER", store: "GlowLab", description: "Skincare and cosmetics bundled for festive glow. Handpicked lip shades and serum combos.", logoUrl: "https://upload.wikimedia.org/wikipedia/commons/7/7d/Sephora_Logo.svg", sellerSlug: "glowlab" },
-];
 
 
 
@@ -137,18 +131,83 @@ const Home = () => {
     canonical: window.location.origin + "/home",
   });
 
-  const [posts, setPosts] = useState<Post[]>(initialPosts);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [hasMore, setHasMore] = useState(true);
+  const [page, setPage] = useState(0);
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
+  // Transform database post to UI post format
+  const transformPost = (dbPost: PostWithBusiness): Post => {
+    return {
+      id: dbPost.id,
+      image: dbPost.photo_url,
+      offer: dbPost.offer || "Special Offer",
+      store: dbPost.business.name,
+      description: dbPost.description || "Check out this amazing deal!",
+      logoUrl: dbPost.business.logo_url || "https://via.placeholder.com/40x40?text=Logo",
+      sellerSlug: dbPost.business.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+    };
+  };
+
+  // Fetch posts from database
+  const fetchPosts = async (pageNum: number = 0, append: boolean = false) => {
+    try {
+      if (!append) setLoading(true);
+
+      const limit = 10;
+      const offset = pageNum * limit;
+
+      const { data, error } = await supabase
+        .from('posts')
+        .select(`
+          *,
+          business:businesses(*)
+        `)
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+      if (error) {
+        throw error;
+      }
+
+      const transformedPosts = (data || []).map(transformPost);
+
+      if (append) {
+        setPosts(prev => [...prev, ...transformedPosts]);
+      } else {
+        setPosts(transformedPosts);
+      }
+
+      // Check if we have more posts
+      setHasMore(transformedPosts.length === limit);
+
+    } catch (error) {
+      console.error('Error fetching posts:', error);
+      toast.error("Failed to load posts. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Initial load
+  useEffect(() => {
+    fetchPosts(0, false);
+  }, []);
+
+  // Infinite scroll
   useEffect(() => {
     const ob = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting) {
-        setPosts((p) => [...p, ...initialPosts.map(x => ({ ...x, id: Math.random().toString().slice(2) }))]);
+      if (entries[0].isIntersecting && hasMore && !loading) {
+        const nextPage = page + 1;
+        setPage(nextPage);
+        fetchPosts(nextPage, true);
       }
     }, { rootMargin: '200px' });
+
     if (loaderRef.current) ob.observe(loaderRef.current);
     return () => ob.disconnect();
-  }, []);
+  }, [hasMore, loading, page]);
 
   return (
     <main className="pb-24 max-w-md mx-auto">
@@ -166,10 +225,59 @@ const Home = () => {
       </section>
 
       <section className="mt-2 px-5 space-y-4">
-        {posts.map((p) => (
-          <FeedPost key={p.id} post={p} />
-        ))}
-        <div ref={loaderRef} className="h-12" />
+        {loading && posts.length === 0 ? (
+          // Initial loading skeleton
+          [...Array(3)].map((_, index) => (
+            <div key={index} className="relative rounded-xl overflow-hidden shadow-md bg-card animate-pulse">
+              <div className="relative" style={{ height: 440 }}>
+                <div className="w-full h-full bg-muted" />
+                <div className="absolute left-3 top-3">
+                  <div className="bg-muted h-6 w-20 rounded-sm" />
+                </div>
+                <div className="absolute inset-x-0 bottom-0 p-3 h-1/4 bg-gradient-to-t from-black/50 to-transparent">
+                  <div className="flex items-center justify-between">
+                    <div className="h-4 w-24 bg-muted rounded" />
+                    <div className="h-8 w-16 bg-muted rounded" />
+                  </div>
+                  <div className="mt-3 flex gap-3 items-start">
+                    <div className="h-9 w-9 bg-muted rounded-full" />
+                    <div className="space-y-2 flex-1">
+                      <div className="h-3 w-full bg-muted rounded" />
+                      <div className="h-3 w-3/4 bg-muted rounded" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))
+        ) : posts.length === 0 ? (
+          // No posts state
+          <div className="text-center py-12">
+            <div className="text-6xl mb-4">📱</div>
+            <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
+            <p className="text-muted-foreground">
+              Be the first to discover amazing deals when businesses start posting!
+            </p>
+          </div>
+        ) : (
+          // Posts list
+          posts.map((p) => (
+            <FeedPost key={p.id} post={p} />
+          ))
+        )}
+
+        {/* Infinite scroll loader */}
+        {hasMore && posts.length > 0 && (
+          <div ref={loaderRef} className="h-12 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          </div>
+        )}
+
+        {!hasMore && posts.length > 0 && (
+          <div className="text-center py-8 text-muted-foreground">
+            <p>You've seen all the latest deals! 🎉</p>
+          </div>
+        )}
       </section>
 
       <BottomNav active="home" />
