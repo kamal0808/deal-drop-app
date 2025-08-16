@@ -1,44 +1,145 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import BottomNav from "@/components/BottomNav";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useSEO } from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck, MapPin, Phone, MessageCircle, Navigation, Heart, MessageSquare, Share2 } from "lucide-react";
-import img1 from "@/assets/feed1.jpg";
-import img2 from "@/assets/feed2.jpg";
-import img3 from "@/assets/feed3.jpg";
-import img4 from "@/assets/feed4.jpg";
-import img5 from "@/assets/feed5.jpg";
-import img6 from "@/assets/feed6.jpg";
+import { BadgeCheck, MapPin, Phone, MessageCircle, Navigation, Heart, MessageSquare, Share2, ArrowLeft, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
+import { toast } from "sonner";
+import { generateBusinessSlug, formatPhoneForLink } from "@/lib/utils";
 
-const gallery = [img1, img2, img3, img4, img5, img6, img1, img2, img3, img4, img5, img6];
+// Database types
+type DatabaseBusiness = Tables<'businesses'>;
+type DatabasePost = Tables<'posts'>;
+
+// Business with posts
+type BusinessWithPosts = DatabaseBusiness & {
+  posts: DatabasePost[];
+};
 
 export default function Seller() {
   const { sellername } = useParams();
-  const prettyName = useMemo(() => (sellername || "store").replace(/-/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()), [sellername]);
+  const navigate = useNavigate();
 
-  useSEO({
-    title: `${prettyName} – LocalIt Outlet`,
-    description: `Discover deals, posts and contact details for ${prettyName}.`,
-    canonical: window.location.origin + `/seller/${sellername}`,
-  });
-
+  const [business, setBusiness] = useState<BusinessWithPosts | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [following, setFollowing] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
 
+
+
+  // Fetch business data by slug
+  const fetchBusinessData = async () => {
+    if (!sellername) return;
+
+    try {
+      setLoading(true);
+
+      // First, get all businesses and find the one with matching slug
+      const { data: businesses, error: businessError } = await supabase
+        .from('businesses')
+        .select('*');
+
+      if (businessError) throw businessError;
+
+      // Find business by slug
+      const matchingBusiness = businesses?.find(b => generateBusinessSlug(b.name) === sellername);
+
+      if (!matchingBusiness) {
+        throw new Error('Business not found');
+      }
+
+      // Fetch posts for this business
+      const { data: posts, error: postsError } = await supabase
+        .from('posts')
+        .select('*')
+        .eq('business_id', matchingBusiness.id)
+        .order('created_at', { ascending: false });
+
+      if (postsError) throw postsError;
+
+      setBusiness({
+        ...matchingBusiness,
+        posts: posts || []
+      });
+
+    } catch (error) {
+      console.error('Error fetching business data:', error);
+      toast.error("Business not found or failed to load");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchBusinessData();
+  }, [sellername]);
+
+  // SEO setup
+  useSEO({
+    title: business ? `${business.name} – LocalIt Outlet` : 'Business – LocalIt Outlet',
+    description: business ? `Discover deals, posts and contact details for ${business.name}.` : 'Discover local business deals and offers.',
+    canonical: window.location.origin + `/seller/${sellername}`,
+  });
+
   const openViewer = (idx: number) => { setStartIndex(idx); setViewerOpen(true); };
 
-  const cover = img4;
-  const logo = "https://upload.wikimedia.org/wikipedia/commons/3/36/Adidas_Logo.svg";
-  const address = "Level 2, Sarath City Capital, Hyderabad";
-  const phone = "+91 90000 00000";
+  // Loading state
+  if (loading) {
+    return (
+      <main className="pb-24 max-w-md mx-auto">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading business details...</p>
+          </div>
+        </div>
+        <BottomNav />
+      </main>
+    );
+  }
+
+  // Business not found state
+  if (!business) {
+    return (
+      <main className="pb-24 max-w-md mx-auto">
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <div className="text-6xl mb-4">🏪</div>
+            <h2 className="text-xl font-semibold mb-2">Business Not Found</h2>
+            <p className="text-muted-foreground mb-4">
+              The business you're looking for doesn't exist or has been removed.
+            </p>
+            <Button onClick={() => navigate('/home')} variant="outline">
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Home
+            </Button>
+          </div>
+        </div>
+        <BottomNav />
+      </main>
+    );
+  }
+
+  const phoneForLink = formatPhoneForLink(business.phone_number);
+  const whatsappForLink = formatPhoneForLink(business.whatsapp_number);
 
   return (
     <main className="pb-24 max-w-md mx-auto">
       <section className="relative h-[180px] w-full overflow-hidden">
-        <img src={cover} alt={`${prettyName} cover`} className="w-full h-full object-cover" />
+        <img
+          src={business.cover_photo_url || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=200&fit=crop"}
+          alt={`${business.name} cover`}
+          className="w-full h-full object-cover"
+        />
         <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 h-36 w-36 rounded-full bg-background shadow-xl grid place-items-center overflow-hidden border">
-          <img src={logo} alt={`${prettyName} logo`} className="p-3 object-contain" />
+          <img
+            src={business.logo_url || "https://via.placeholder.com/144x144?text=Logo"}
+            alt={`${business.name} logo`}
+            className="p-3 object-contain w-full h-full"
+          />
         </div>
       </section>
 
@@ -46,54 +147,131 @@ export default function Seller() {
         <div className="flex items-start justify-between">
           <div className="min-w-0">
             <h1 className="text-xl font-semibold flex items-center gap-2">
-              {prettyName}
+              {business.name}
               <BadgeCheck className="text-primary" size={18} />
             </h1>
-            <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
-              <MapPin size={14} className="text-brand" /> {address}
-            </p>
+            {business.description && (
+              <p className="text-sm text-muted-foreground mt-1">
+                {business.description}
+              </p>
+            )}
+            {business.google_maps_link && (
+              <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
+                <MapPin size={14} className="text-brand" /> View on Maps
+              </p>
+            )}
             <div className="mt-3 flex items-center gap-2">
-              <Button size="sm">Follow</Button>
-              <a href={`tel:${phone}`} className="h-9 w-9 rounded-full grid place-items-center bg-secondary text-secondary-foreground" aria-label="Call"><Phone size={18} /></a>
-              <a href={`sms:${phone}`} className="h-9 w-9 rounded-full grid place-items-center bg-secondary text-secondary-foreground" aria-label="Text"><MessageCircle size={18} /></a>
-              <a href={`https://wa.me/919000000000`} target="_blank" className="h-9 w-9 rounded-full grid place-items-center bg-secondary text-secondary-foreground" aria-label="WhatsApp" rel="noreferrer"><MessageSquare size={18} /></a>
-              <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(address)}`} target="_blank" className="h-9 w-9 rounded-full grid place-items-center bg-secondary text-secondary-foreground" aria-label="Maps" rel="noreferrer"><Navigation size={18} /></a>
+              <Button
+                size="sm"
+                variant={following ? 'secondary' : 'default'}
+                onClick={() => setFollowing(!following)}
+              >
+                {following ? 'Following' : 'Follow'}
+              </Button>
+              {business.phone_number && (
+                <a
+                  href={`tel:${phoneForLink}`}
+                  className="h-9 w-9 rounded-full grid place-items-center bg-secondary text-secondary-foreground"
+                  aria-label="Call"
+                >
+                  <Phone size={18} />
+                </a>
+              )}
+              {business.phone_number && (
+                <a
+                  href={`sms:${phoneForLink}`}
+                  className="h-9 w-9 rounded-full grid place-items-center bg-secondary text-secondary-foreground"
+                  aria-label="Text"
+                >
+                  <MessageCircle size={18} />
+                </a>
+              )}
+              {business.whatsapp_number && (
+                <a
+                  href={`https://wa.me/${whatsappForLink}`}
+                  target="_blank"
+                  className="h-9 w-9 rounded-full grid place-items-center bg-secondary text-secondary-foreground"
+                  aria-label="WhatsApp"
+                  rel="noreferrer"
+                >
+                  <MessageSquare size={18} />
+                </a>
+              )}
+              {business.google_maps_link && (
+                <a
+                  href={business.google_maps_link}
+                  target="_blank"
+                  className="h-9 w-9 rounded-full grid place-items-center bg-secondary text-secondary-foreground"
+                  aria-label="Maps"
+                  rel="noreferrer"
+                >
+                  <Navigation size={18} />
+                </a>
+              )}
             </div>
           </div>
         </div>
 
         <div className="mt-4 grid grid-cols-3 gap-3 text-center">
           <div className="rounded-full bg-secondary text-secondary-foreground py-2">
-            <div className="text-base font-semibold">25</div>
+            <div className="text-base font-semibold">{business.posts.length}</div>
             <div className="text-[11px] opacity-80 -mt-0.5">posts</div>
           </div>
           <div className="rounded-full bg-secondary text-secondary-foreground py-2">
-            <div className="text-base font-semibold">12.5k</div>
+            <div className="text-base font-semibold">-</div>
             <div className="text-[11px] opacity-80 -mt-0.5">followers</div>
           </div>
           <div className="rounded-full bg-secondary text-secondary-foreground py-2">
-            <div className="text-base font-semibold">60k</div>
+            <div className="text-base font-semibold">-</div>
             <div className="text-[11px] opacity-80 -mt-0.5">impressions</div>
           </div>
         </div>
 
-        <div className="mt-5 grid grid-cols-3 auto-rows-[80px] gap-2">
-          {gallery.map((g, idx) => {
-            const span = [5,6,8,9].includes(idx) ? "col-span-2 row-span-2" : "";
-            return (
-              <button key={idx} onClick={() => openViewer(idx)} className={`relative overflow-hidden rounded-md bg-card ${span}`}>
-                <img src={g} alt={`post ${idx+1}`} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
-              </button>
-            );
-          })}
-        </div>
+        {business.posts.length > 0 ? (
+          <div className="mt-5 grid grid-cols-3 auto-rows-[80px] gap-2">
+            {business.posts.map((post, idx) => {
+              const span = [5,6,8,9].includes(idx) ? "col-span-2 row-span-2" : "";
+              return (
+                <button
+                  key={post.id}
+                  onClick={() => openViewer(idx)}
+                  className={`relative overflow-hidden rounded-md bg-card ${span}`}
+                >
+                  <img
+                    src={post.photo_url}
+                    alt={post.description || `Post ${idx+1}`}
+                    className="absolute inset-0 w-full h-full object-cover"
+                    loading="lazy"
+                  />
+                  {post.offer && (
+                    <div className="absolute top-1 left-1 bg-destructive text-destructive-foreground px-2 py-0.5 rounded text-xs font-semibold">
+                      {post.offer}
+                    </div>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="mt-5 text-center py-12">
+            <div className="text-6xl mb-4">📸</div>
+            <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
+            <p className="text-muted-foreground">
+              This business hasn't shared any posts yet. Check back later for amazing deals!
+            </p>
+          </div>
+        )}
       </section>
 
-      {viewerOpen && (
+      {viewerOpen && business.posts.length > 0 && (
         <div className="fixed inset-0 bg-black/90 z-50 overflow-y-auto snap-y snap-mandatory">
-          {gallery.map((g, i) => (
-            <section key={i} className="h-screen w-full relative snap-start">
-              <img src={g} alt="full view" className="absolute inset-0 w-full h-full object-contain" />
+          {business.posts.map((post, i) => (
+            <section key={post.id} className="h-screen w-full relative snap-start">
+              <img
+                src={post.photo_url}
+                alt={post.description || "Post image"}
+                className="absolute inset-0 w-full h-full object-contain"
+              />
               <div className="absolute right-3 bottom-28 flex flex-col items-center gap-3">
                 <button className="h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale" aria-label="Like">
                   <Heart size={20} />
@@ -108,19 +286,39 @@ export default function Seller() {
               <div className="absolute left-0 right-0 bottom-0 p-4 glass text-primary-foreground">
                 <div className="flex items-center gap-2">
                   <div className="h-8 w-8 rounded-full overflow-hidden bg-background grid place-items-center">
-                    <img src="https://upload.wikimedia.org/wikipedia/commons/3/36/Adidas_Logo.svg" alt="store logo" className="p-1 object-contain" />
+                    <img
+                      src={business.logo_url || "https://via.placeholder.com/32x32?text=Logo"}
+                      alt="store logo"
+                      className="p-1 object-contain w-full h-full"
+                    />
                   </div>
-                  <div>
-                    <div className="text-sm font-medium">{prettyName}</div>
-                    <div className="text-xs opacity-80">Great discounts on latest arrivals. Limited period offer.</div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium">{business.name}</div>
+                    <div className="text-xs opacity-80 truncate">
+                      {post.description || post.offer || "Check out this amazing deal!"}
+                    </div>
                   </div>
+                  {post.offer && (
+                    <div className="bg-destructive text-destructive-foreground px-2 py-1 rounded text-xs font-semibold">
+                      {post.offer}
+                    </div>
+                  )}
                 </div>
               </div>
-              <button onClick={() => setViewerOpen(false)} className="absolute top-4 right-4 bg-background text-foreground rounded-full h-9 px-3 text-sm">Close</button>
+              <button
+                onClick={() => setViewerOpen(false)}
+                className="absolute top-4 right-4 bg-background text-foreground rounded-full h-9 px-3 text-sm"
+              >
+                Close
+              </button>
             </section>
-          )).slice(startIndex).concat(gallery.slice(0, startIndex).map((g, i) => (
-            <section key={`wrap-${i}`} className="h-screen w-full relative snap-start">
-              <img src={g} alt="full view" className="absolute inset-0 w-full h-full object-contain" />
+          )).slice(startIndex).concat(business.posts.slice(0, startIndex).map((post, i) => (
+            <section key={`wrap-${post.id}`} className="h-screen w-full relative snap-start">
+              <img
+                src={post.photo_url}
+                alt={post.description || "Post image"}
+                className="absolute inset-0 w-full h-full object-contain"
+              />
             </section>
           )))}
         </div>

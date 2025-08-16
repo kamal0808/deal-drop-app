@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
+import { generateBusinessSlug } from "@/lib/utils";
 
 // Database types
 type DatabasePost = Tables<'posts'>;
@@ -146,7 +147,7 @@ const Home = () => {
       store: dbPost.business.name,
       description: dbPost.description || "Check out this amazing deal!",
       logoUrl: dbPost.business.logo_url || "https://via.placeholder.com/40x40?text=Logo",
-      sellerSlug: dbPost.business.name.toLowerCase().replace(/\s+/g, '-').replace(/[^a-z0-9-]/g, '')
+      sellerSlug: generateBusinessSlug(dbPost.business.name)
     };
   };
 
