@@ -35,7 +35,7 @@ type Post = {
 
 
 
-const FeedPost = ({ post }: { post: Post }) => {
+const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => void }) => {
   const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -62,6 +62,11 @@ const FeedPost = ({ post }: { post: Post }) => {
   return (
     <article className="relative rounded-xl overflow-hidden shadow-md bg-card animate-fade-in">
       <div className="relative" style={{ height: 440 }}>
+        <button
+          onClick={onImageClick}
+          className="absolute inset-0 w-full h-full z-10"
+          aria-label="View post in full screen"
+        />
         <img src={post.image} alt={`${post.store} deal visual`} className={`w-full h-full object-cover ${expanded ? 'blur-[2px]' : ''}`} loading="lazy" />
         {/* Ribbon */}
         <div className="absolute left-3 top-3">
@@ -136,7 +141,15 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [hasMore, setHasMore] = useState(true);
   const [page, setPage] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [startIndex, setStartIndex] = useState(0);
   const loaderRef = useRef<HTMLDivElement | null>(null);
+
+  // Open post viewer at specific index
+  const openViewer = (idx: number) => {
+    setStartIndex(idx);
+    setViewerOpen(true);
+  };
 
   // Transform database post to UI post format
   const transformPost = (dbPost: PostWithBusiness): Post => {
@@ -210,6 +223,28 @@ const Home = () => {
     return () => ob.disconnect();
   }, [hasMore, loading, page]);
 
+  // Keyboard support for viewer
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && viewerOpen) {
+        setViewerOpen(false);
+      }
+    };
+
+    if (viewerOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent body scroll when viewer is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [viewerOpen]);
+
   return (
     <main className="pb-24 max-w-md mx-auto">
       <header className="px-4 pt-4">
@@ -262,8 +297,12 @@ const Home = () => {
           </div>
         ) : (
           // Posts list
-          posts.map((p) => (
-            <FeedPost key={p.id} post={p} />
+          posts.map((p, index) => (
+            <FeedPost
+              key={p.id}
+              post={p}
+              onImageClick={() => openViewer(index)}
+            />
           ))
         )}
 
@@ -280,6 +319,97 @@ const Home = () => {
           </div>
         )}
       </section>
+
+      {/* Full-screen post viewer */}
+      {viewerOpen && posts.length > 0 && (
+        <div className="fixed inset-0 bg-black/90 z-50 overflow-y-auto snap-y snap-mandatory">
+          {posts.map((post, i) => (
+            <section key={post.id} className="h-screen w-full relative snap-start">
+              <img
+                src={post.image}
+                alt={post.description || "Post image"}
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+              <div className="absolute right-3 bottom-28 flex flex-col items-center gap-3">
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Like functionality can be added here
+                  }}
+                  className="h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale"
+                  aria-label="Like"
+                >
+                  <Heart size={20} />
+                </button>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    // Comment functionality can be added here
+                  }}
+                  className="h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale"
+                  aria-label="Comments"
+                >
+                  <MessageCircle size={20} />
+                </button>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    const shareData = { title: "LocalIt", text: `${post.store}: ${post.offer}`, url: window.location.href };
+                    try {
+                      if (navigator.share) {
+                        await navigator.share(shareData);
+                      } else {
+                        await navigator.clipboard.writeText(`${shareData.text} - ${shareData.url}`);
+                        toast.success("Link copied to clipboard");
+                      }
+                    } catch {}
+                  }}
+                  className="h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale"
+                  aria-label="Share"
+                >
+                  <Share2 size={20} />
+                </button>
+              </div>
+              <div className="absolute left-0 right-0 bottom-0 p-4 glass text-primary-foreground">
+                <div className="flex items-center gap-2">
+                  <div className="h-8 w-8 rounded-full overflow-hidden bg-background grid place-items-center">
+                    <img
+                      src={post.logoUrl}
+                      alt="store logo"
+                      className="p-1 object-contain w-full h-full"
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="text-sm font-medium">{post.store}</div>
+                    <div className="text-xs opacity-80 truncate">
+                      {post.description}
+                    </div>
+                  </div>
+                  {post.offer && (
+                    <div className="bg-destructive text-destructive-foreground px-2 py-1 rounded text-xs font-semibold">
+                      {post.offer}
+                    </div>
+                  )}
+                </div>
+              </div>
+              <button
+                onClick={() => setViewerOpen(false)}
+                className="absolute top-4 right-4 bg-background text-foreground rounded-full h-9 px-3 text-sm"
+              >
+                Close
+              </button>
+            </section>
+          )).slice(startIndex).concat(posts.slice(0, startIndex).map((post, i) => (
+            <section key={`wrap-${post.id}`} className="h-screen w-full relative snap-start">
+              <img
+                src={post.image}
+                alt={post.description || "Post image"}
+                className="absolute inset-0 w-full h-full object-contain"
+              />
+            </section>
+          )))}
+        </div>
+      )}
 
       <BottomNav active="home" />
     </main>
