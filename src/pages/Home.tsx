@@ -62,12 +62,13 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
   return (
     <article className="relative rounded-xl overflow-hidden shadow-md bg-card animate-fade-in">
       <div className="relative" style={{ height: 440 }}>
-        <button
+        <img
+          src={post.image}
+          alt={`${post.store} deal visual`}
+          className={`w-full h-full object-cover cursor-pointer ${expanded ? 'blur-[2px]' : ''}`}
+          loading="lazy"
           onClick={onImageClick}
-          className="absolute inset-0 w-full h-full z-10"
-          aria-label="View post in full screen"
         />
-        <img src={post.image} alt={`${post.store} deal visual`} className={`w-full h-full object-cover ${expanded ? 'blur-[2px]' : ''}`} loading="lazy" />
         {/* Ribbon */}
         <div className="absolute left-3 top-3">
           <div className="bg-destructive text-destructive-foreground px-3 py-1 rounded-sm shadow"
