@@ -41,10 +41,18 @@ export default function CategoryMenu({ selectedCategoryId = 'all', onCategorySel
     try {
       setLoading(true);
 
-      // Fetch categories from Supabase
+      // Fetch only categories that have posts associated with them
+      // Using inner join to automatically filter categories without posts
       const { data, error } = await supabase
         .from('categories')
-        .select('*')
+        .select(`
+          id,
+          name,
+          icon,
+          created_at,
+          updated_at,
+          posts!inner(id)
+        `)
         .order('name', { ascending: true });
 
       if (error) {
@@ -66,7 +74,11 @@ export default function CategoryMenu({ selectedCategoryId = 'all', onCategorySel
       const transformedCategories: CategoryWithIcon[] = [
         allCategory,
         ...(data || []).map((category, index) => ({
-          ...category,
+          id: category.id,
+          name: category.name,
+          icon: category.icon,
+          created_at: category.created_at,
+          updated_at: category.updated_at,
           Icon: getIconComponent(category.icon),
           color: getColorForCategory(index + 1) // +1 because "All" takes index 0
         }))
