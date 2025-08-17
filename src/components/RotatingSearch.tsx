@@ -21,13 +21,14 @@ export default function RotatingSearch({
 }: RotatingSearchProps) {
   const [idx, setIdx] = useState(0);
   const [inputValue, setInputValue] = useState(searchQuery);
-  const debouncedSearchTerm = useDebounce(inputValue, 500); // 500ms debounce
+  const debouncedSearchTerm = useDebounce(inputValue, 1000); // 1000ms debounce for slower typers
 
   useEffect(() => {
     const t = setInterval(() => setIdx((i) => (i + 1) % placeholders.length), 2000);
     return () => clearInterval(t);
   }, []);
 
+  // Sync input value with external searchQuery prop
   useEffect(() => {
     setInputValue(searchQuery);
   }, [searchQuery]);
@@ -47,7 +48,9 @@ export default function RotatingSearch({
   };
 
   const handleClear = () => {
+    // Clear input immediately for better UX
     setInputValue("");
+    // Then notify parent component
     onClear?.();
   };
 
