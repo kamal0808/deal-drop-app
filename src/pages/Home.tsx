@@ -144,6 +144,7 @@ const Home = () => {
   const [page, setPage] = useState(0);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
   // Open post viewer at specific index
@@ -166,19 +167,26 @@ const Home = () => {
   };
 
   // Fetch posts from database
-  const fetchPosts = async (pageNum: number = 0, append: boolean = false) => {
+  const fetchPosts = async (pageNum: number = 0, append: boolean = false, categoryId: string = selectedCategoryId) => {
     try {
       if (!append) setLoading(true);
 
       const limit = 10;
       const offset = pageNum * limit;
 
-      const { data, error } = await supabase
+      let query = supabase
         .from('posts')
         .select(`
           *,
           business:businesses(*)
-        `)
+        `);
+
+      // Apply category filter if not "all"
+      if (categoryId !== 'all') {
+        query = query.eq('category_id', categoryId);
+      }
+
+      const { data, error } = await query
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -203,6 +211,14 @@ const Home = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle category selection
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    setPage(0);
+    setHasMore(true);
+    fetchPosts(0, false, categoryId);
   };
 
   // Initial load
@@ -258,7 +274,10 @@ const Home = () => {
       </section>
 
       <section className="mt-2 px-3">
-        <CategoryMenu />
+        <CategoryMenu
+          selectedCategoryId={selectedCategoryId}
+          onCategorySelect={handleCategorySelect}
+        />
       </section>
 
       <section className="mt-2 px-5 space-y-4">

@@ -24,7 +24,12 @@ const getIconComponent = (iconName: string): LucideIcon => {
   return IconComponent || Tag;
 };
 
-export default function CategoryMenu() {
+interface CategoryMenuProps {
+  selectedCategoryId?: string;
+  onCategorySelect?: (categoryId: string) => void;
+}
+
+export default function CategoryMenu({ selectedCategoryId = 'all', onCategorySelect }: CategoryMenuProps) {
   const [categories, setCategories] = useState<CategoryWithIcon[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -106,6 +111,7 @@ export default function CategoryMenu() {
     <nav className="w-full overflow-x-auto no-scrollbar" aria-label="Categories">
       <ul className="flex gap-4 py-2">
         {categories.map(({ id, name, color, Icon }) => {
+          const isSelected = selectedCategoryId === id;
           const map = {
             brand: "bg-brand text-brand-foreground",
             primary: "bg-primary text-primary-foreground",
@@ -115,13 +121,21 @@ export default function CategoryMenu() {
             destructive: "bg-destructive text-destructive-foreground",
           } as const;
           const colorClass = map[color];
+          const selectedClass = isSelected ? colorClass : "bg-muted/50 text-muted-foreground";
+
           return (
             <li key={id} className="flex-shrink-0">
-              <button className="flex flex-col items-center justify-center w-16">
-                <span className={`h-10 w-10 rounded-full grid place-items-center shadow ${colorClass}`}>
+              <button
+                className="flex flex-col items-center justify-center w-16 transition-all duration-200 hover:scale-105"
+                onClick={() => onCategorySelect?.(id)}
+                aria-pressed={isSelected}
+              >
+                <span className={`h-10 w-10 rounded-full grid place-items-center shadow transition-all duration-200 ${selectedClass} ${isSelected ? 'ring-2 ring-offset-2 ring-brand/50' : ''}`}>
                   <Icon size={18} />
                 </span>
-                <span className="mt-1 text-xs text-muted-foreground">{name}</span>
+                <span className={`mt-1 text-xs text-center leading-tight transition-colors duration-200 ${name.length > 8 ? 'text-[10px]' : ''} ${isSelected ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
+                  {name}
+                </span>
               </button>
             </li>
           );

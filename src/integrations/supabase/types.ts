@@ -41,6 +41,7 @@ export type Database = {
       posts: {
         Row: {
           business_id: string
+          category_id: string | null
           created_at: string | null
           description: string | null
           id: string
@@ -50,6 +51,7 @@ export type Database = {
         }
         Insert: {
           business_id: string
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -59,6 +61,7 @@ export type Database = {
         }
         Update: {
           business_id?: string
+          category_id?: string | null
           created_at?: string | null
           description?: string | null
           id?: string
@@ -72,6 +75,13 @@ export type Database = {
             columns: ["business_id"]
             isOneToOne: false
             referencedRelation: "businesses"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "posts_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "categories"
             referencedColumns: ["id"]
           },
         ]
