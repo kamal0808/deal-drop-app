@@ -145,6 +145,8 @@ const Home = () => {
   const [viewerOpen, setViewerOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isSearchMode, setIsSearchMode] = useState(false);
   const loaderRef = useRef<HTMLDivElement | null>(null);
 
   // Open post viewer at specific index
@@ -167,43 +169,86 @@ const Home = () => {
   };
 
   // Fetch posts from database
-  const fetchPosts = async (pageNum: number = 0, append: boolean = false, categoryId: string = selectedCategoryId) => {
+  const fetchPosts = async (
+    pageNum: number = 0,
+    append: boolean = false,
+    categoryId: string = selectedCategoryId,
+    searchTerm: string = searchQuery
+  ) => {
     try {
       if (!append) setLoading(true);
 
       const limit = 10;
       const offset = pageNum * limit;
 
-      let query = supabase
-        .from('posts')
-        .select(`
-          *,
-          business:businesses(*)
-        `);
+      // Use search function if search term is provided
+      if (searchTerm.trim()) {
+        const categoryFilter = categoryId !== 'all' ? categoryId : null;
 
-      // Apply category filter if not "all"
-      if (categoryId !== 'all') {
-        query = query.eq('category_id', categoryId);
-      }
+        const { data, error } = await supabase.rpc('search_posts', {
+          search_term: searchTerm,
+          category_filter: categoryFilter,
+          result_limit: limit,
+          result_offset: offset
+        });
 
-      const { data, error } = await query
-        .order('created_at', { ascending: false })
-        .range(offset, offset + limit - 1);
+        if (error) {
+          throw error;
+        }
 
-      if (error) {
-        throw error;
-      }
+        // Transform search results to match Post interface
+        const transformedPosts = (data || []).map((result: any): Post => ({
+          id: result.id,
+          image: result.photo_url,
+          offer: result.offer || "Special Offer",
+          store: result.business_name,
+          description: result.description || "Check out this amazing deal!",
+          logoUrl: result.business_logo_url || "https://via.placeholder.com/40x40?text=Logo",
+          sellerSlug: generateBusinessSlug(result.business_name)
+        }));
 
-      const transformedPosts = (data || []).map(transformPost);
+        if (append) {
+          setPosts(prev => [...prev, ...transformedPosts]);
+        } else {
+          setPosts(transformedPosts);
+        }
 
-      if (append) {
-        setPosts(prev => [...prev, ...transformedPosts]);
+        // Check if we have more posts
+        setHasMore(transformedPosts.length === limit);
+
       } else {
-        setPosts(transformedPosts);
-      }
+        // Regular fetch without search
+        let query = supabase
+          .from('posts')
+          .select(`
+            *,
+            business:businesses(*)
+          `);
 
-      // Check if we have more posts
-      setHasMore(transformedPosts.length === limit);
+        // Apply category filter if not "all"
+        if (categoryId !== 'all') {
+          query = query.eq('category_id', categoryId);
+        }
+
+        const { data, error } = await query
+          .order('created_at', { ascending: false })
+          .range(offset, offset + limit - 1);
+
+        if (error) {
+          throw error;
+        }
+
+        const transformedPosts = (data || []).map(transformPost);
+
+        if (append) {
+          setPosts(prev => [...prev, ...transformedPosts]);
+        } else {
+          setPosts(transformedPosts);
+        }
+
+        // Check if we have more posts
+        setHasMore(transformedPosts.length === limit);
+      }
 
     } catch (error) {
       console.error('Error fetching posts:', error);
@@ -218,7 +263,25 @@ const Home = () => {
     setSelectedCategoryId(categoryId);
     setPage(0);
     setHasMore(true);
-    fetchPosts(0, false, categoryId);
+    fetchPosts(0, false, categoryId, searchQuery);
+  };
+
+  // Handle search
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    setIsSearchMode(true);
+    setPage(0);
+    setHasMore(true);
+    fetchPosts(0, false, selectedCategoryId, query);
+  };
+
+  // Handle search clear
+  const handleSearchClear = () => {
+    setSearchQuery('');
+    setIsSearchMode(false);
+    setPage(0);
+    setHasMore(true);
+    fetchPosts(0, false, selectedCategoryId, '');
   };
 
   // Initial load
@@ -232,13 +295,13 @@ const Home = () => {
       if (entries[0].isIntersecting && hasMore && !loading) {
         const nextPage = page + 1;
         setPage(nextPage);
-        fetchPosts(nextPage, true);
+        fetchPosts(nextPage, true, selectedCategoryId, searchQuery);
       }
     }, { rootMargin: '200px' });
 
     if (loaderRef.current) ob.observe(loaderRef.current);
     return () => ob.disconnect();
-  }, [hasMore, loading, page]);
+  }, [hasMore, loading, page, selectedCategoryId, searchQuery]);
 
   // Keyboard support for viewer
   useEffect(() => {
@@ -270,7 +333,12 @@ const Home = () => {
       </header>
 
       <section className="px-4 mt-3">
-        <RotatingSearch />
+        <RotatingSearch
+          onSearch={handleSearch}
+          onClear={handleSearchClear}
+          searchQuery={searchQuery}
+          enableAutoSearch={true}
+        />
       </section>
 
       <section className="mt-2 px-3">
@@ -279,6 +347,17 @@ const Home = () => {
           onCategorySelect={handleCategorySelect}
         />
       </section>
+
+      {isSearchMode && searchQuery && (
+        <section className="px-4 mt-2">
+          <div className="text-sm text-muted-foreground">
+            Search results for "<span className="font-medium text-foreground">{searchQuery}</span>"
+            {selectedCategoryId !== 'all' && (
+              <span> in selected category</span>
+            )}
+          </div>
+        </section>
+      )}
 
       <section className="mt-2 px-5 space-y-4">
         {loading && posts.length === 0 ? (
