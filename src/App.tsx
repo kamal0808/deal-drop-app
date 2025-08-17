@@ -10,6 +10,7 @@ import Discover from "./pages/Discover";
 import Seller from "./pages/Seller";
 import Community from "./pages/Community";
 import Profile from "./pages/Profile";
+import LocalitAI from "./pages/LocalitAI";
 
 const queryClient = new QueryClient();
 
@@ -24,6 +25,7 @@ const App = () => (
           <Route path="/home" element={<Home />} />
           <Route path="/discover" element={<Discover />} />
           <Route path="/community" element={<Community />} />
+          <Route path="/ai" element={<LocalitAI />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/seller/:sellername" element={<Seller />} />
           {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
