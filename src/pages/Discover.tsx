@@ -4,24 +4,13 @@ import CategoryMenu from "@/components/CategoryMenu";
 import RotatingSearch from "@/components/RotatingSearch";
 import { useSEO } from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
+import { supabase } from "@/integrations/supabase/client";
+import { Tables } from "@/integrations/supabase/types";
 
-// Sample brand/store logos
-const storeLogos = [
-  "https://upload.wikimedia.org/wikipedia/commons/3/36/Adidas_Logo.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/2/2f/Zara_Logo.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/f/fa/Apple_logo_black.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/7/7d/Sephora_Logo.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/f/fd/Nike_Swoosh_Logo_Black.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/2/24/Puma_AG.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/2/23/Lenovo_logo_2015.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/5/5f/Hewlett_Packard_logo.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/4/48/Sony_logo.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/2/24/Dell_Logo.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/2/2e/LG_logo_%282015%29.svg",
-  "https://upload.wikimedia.org/wikipedia/commons/5/5a/Under_armour_logo.svg",
-];
+type Business = Tables<'businesses'>;
 
-const offers = ["30% OFF", "20% OFF", "BUY 1 GET 1", "SALE 40%", "HOT DEAL", "NEW"];
+// Fallback logo for businesses without logos
+const DEFAULT_LOGO = "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop&crop=center";
 
 export default function Discover() {
   useSEO({
@@ -30,19 +19,79 @@ export default function Discover() {
     canonical: window.location.origin + "/discover",
   });
 
-  // Infinite grid data
-  const [gridItems, setGridItems] = useState<string[]>(storeLogos);
+  // State for businesses data
+  const [businessesWithOffers, setBusinessesWithOffers] = useState<Business[]>([]);
+  const [allBusinesses, setAllBusinesses] = useState<Business[]>([]);
+  const [displayedBusinesses, setDisplayedBusinesses] = useState<Business[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const loaderRef = useRef<HTMLDivElement | null>(null);
+  const ITEMS_PER_PAGE = 12;
+
+  // Fetch businesses with offers for the top section
+  const fetchBusinessesWithOffers = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .not('current_offer', 'is', null)
+        .not('current_offer', 'eq', '')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setBusinessesWithOffers(data || []);
+    } catch (error) {
+      console.error('Error fetching businesses with offers:', error);
+    }
+  };
+
+  // Fetch all businesses for the grid section
+  const fetchAllBusinesses = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('businesses')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      setAllBusinesses(data || []);
+      setDisplayedBusinesses((data || []).slice(0, ITEMS_PER_PAGE));
+    } catch (error) {
+      console.error('Error fetching all businesses:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Load more businesses for infinite scroll
+  const loadMoreBusinesses = () => {
+    if (loadingMore || displayedBusinesses.length >= allBusinesses.length) return;
+
+    setLoadingMore(true);
+    setTimeout(() => {
+      const nextItems = allBusinesses.slice(
+        displayedBusinesses.length,
+        displayedBusinesses.length + ITEMS_PER_PAGE
+      );
+      setDisplayedBusinesses(prev => [...prev, ...nextItems]);
+      setLoadingMore(false);
+    }, 500); // Small delay for better UX
+  };
+
+  useEffect(() => {
+    fetchBusinessesWithOffers();
+    fetchAllBusinesses();
+  }, []);
 
   useEffect(() => {
     const ob = new IntersectionObserver((entries) => {
       if (entries[0].isIntersecting) {
-        setGridItems((p) => [...p, ...storeLogos]);
+        loadMoreBusinesses();
       }
     }, { rootMargin: "200px" });
     if (loaderRef.current) ob.observe(loaderRef.current);
     return () => ob.disconnect();
-  }, []);
+  }, [displayedBusinesses, allBusinesses, loadingMore]);
 
   return (
     <main className="pb-24 max-w-md mx-auto">
@@ -60,35 +109,99 @@ export default function Discover() {
         </div>
         <div className="bg-muted h-[180px] overflow-x-auto no-scrollbar">
           <div className="flex items-center gap-3 px-3 py-3">
-            {Array.from({ length: 20 }).map((_, i) => {
-              const logo = storeLogos[i % storeLogos.length];
-              const offer = offers[i % offers.length];
-              return (
-                <div key={i} className="relative h-[112px] w-[112px] rounded-xl overflow-hidden bg-card shadow-sm flex-shrink-0 grid place-items-center">
-                  <img src={logo} alt="store logo" className="max-h-[64px] max-w-[80px] object-contain" loading="lazy" />
+            {loading ? (
+              // Loading skeleton
+              Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="relative h-[112px] w-[112px] rounded-xl overflow-hidden bg-card shadow-sm flex-shrink-0 animate-pulse">
+                  <div className="w-full h-full bg-gray-200"></div>
+                </div>
+              ))
+            ) : businessesWithOffers.length === 0 ? (
+              // No offers available
+              <div className="flex items-center justify-center w-full h-full text-muted-foreground text-sm">
+                No offers available at the moment
+              </div>
+            ) : (
+              // Dynamic offers from database
+              businessesWithOffers.map((business) => (
+                <div key={business.id} className="relative h-[112px] w-[112px] rounded-xl overflow-hidden bg-card shadow-sm flex-shrink-0 grid place-items-center">
+                  <img
+                    src={business.logo_url || DEFAULT_LOGO}
+                    alt={`${business.name} logo`}
+                    className="max-h-[64px] max-w-[80px] object-contain"
+                    loading="lazy"
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = DEFAULT_LOGO;
+                    }}
+                  />
                   <div className="absolute bottom-0 inset-x-0 h-5 bg-destructive text-destructive-foreground grid place-items-center text-[10px] font-semibold">
-                    {offer}
+                    {business.current_offer}
                   </div>
                 </div>
-              );
-            })}
+              ))
+            )}
           </div>
         </div>
       </section>
 
       <section className="mt-4 px-4">
         <div className="grid grid-cols-2 gap-3">
-          {gridItems.map((logo, idx) => (
-            <div key={idx} className="relative rounded-xl overflow-hidden bg-card aspect-square grid place-items-center shadow">
-              <img src={logo} alt="brand logo" className="max-h-[80px] max-w-[100px] object-contain" loading="lazy" />
-              <div className="absolute inset-x-0 bottom-0 h-6 bg-foreground text-background text-[11px] grid place-items-center">
-                <Button size="sm" variant="ghost" className="h-6 px-2 py-0 text-[11px] text-background">
-                  Follow
-                </Button>
+          {loading ? (
+            // Loading skeleton for grid
+            Array.from({ length: 8 }).map((_, idx) => (
+              <div key={idx} className="relative rounded-xl overflow-hidden bg-card aspect-square animate-pulse">
+                <div className="w-full h-full bg-gray-200"></div>
               </div>
+            ))
+          ) : displayedBusinesses.length === 0 ? (
+            // No businesses available
+            <div className="col-span-2 flex items-center justify-center py-12 text-muted-foreground text-sm">
+              No businesses available
             </div>
-          ))}
+          ) : (
+            // Dynamic businesses from database
+            displayedBusinesses.map((business) => (
+              <div key={business.id} className="relative rounded-xl overflow-hidden bg-card aspect-square grid place-items-center shadow">
+                <img
+                  src={business.logo_url || DEFAULT_LOGO}
+                  alt={`${business.name} logo`}
+                  className="max-h-[80px] max-w-[100px] object-contain"
+                  loading="lazy"
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = DEFAULT_LOGO;
+                  }}
+                />
+                <div className="absolute inset-x-0 bottom-0 h-6 bg-foreground text-background text-[11px] grid place-items-center">
+                  <Button size="sm" variant="ghost" className="h-6 px-2 py-0 text-[11px] text-background">
+                    Follow
+                  </Button>
+                </div>
+                {/* Business name tooltip on hover */}
+                <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
+                  <span className="text-white text-xs font-medium text-center px-2">
+                    {business.name}
+                  </span>
+                </div>
+              </div>
+            ))
+          )}
         </div>
+
+        {/* Loading more indicator */}
+        {loadingMore && (
+          <div className="flex justify-center py-4">
+            <div className="grid grid-cols-2 gap-3 w-full">
+              {Array.from({ length: 4 }).map((_, idx) => (
+                <div key={idx} className="relative rounded-xl overflow-hidden bg-card aspect-square animate-pulse">
+                  <div className="w-full h-full bg-gray-200"></div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         <div ref={loaderRef} className="h-10" />
       </section>
 
