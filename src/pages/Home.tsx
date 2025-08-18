@@ -4,14 +4,16 @@ import { useSEO } from "@/hooks/useSEO";
 import BottomNav from "@/components/BottomNav";
 import CategoryMenu from "@/components/CategoryMenu";
 import RotatingSearch from "@/components/RotatingSearch";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
+import { Comments } from "@/components/Comments";
+import { SearchResultPost } from "@/components/SearchResultPost";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { generateBusinessSlug } from "@/lib/utils";
+import { useLikes } from "@/hooks/useLikes";
+import { useComments } from "@/hooks/useComments";
 
 // Database types
 type DatabasePost = Tables<'posts'>;
@@ -36,15 +38,30 @@ type Post = {
 
 
 const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => void }) => {
-  const [liked, setLiked] = useState(false);
   const [following, setFollowing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [openComments, setOpenComments] = useState(false);
   const [shake, setShake] = useState<{ like?: boolean; comment?: boolean; share?: boolean }>({});
 
+  // Use the likes and comments hooks
+  const { liked, likeCount, loading: likesLoading, toggleLike } = useLikes(post.id);
+  const { commentCount } = useComments(post.id);
+
   const trig = (key: keyof typeof shake) => {
     setShake((s) => ({ ...s, [key]: true }));
     setTimeout(() => setShake((s) => ({ ...s, [key]: false })), 380);
+  };
+
+  const handleLikeClick = async () => {
+    if (!likesLoading) {
+      await toggleLike();
+      trig('like');
+    }
+  };
+
+  const handleCommentClick = () => {
+    setOpenComments(true);
+    trig('comment');
   };
 
   const onShare = async () => {
@@ -78,12 +95,35 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
         </div>
         {/* Action stack */}
           <div className="absolute right-2 bottom-28 flex flex-col items-center gap-3">
-          <button onClick={() => { setLiked(v => !v); trig('like'); }} className={`h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale ${shake.like ? 'animate-shake' : ''}`} aria-label="Like">
-            <Heart size={20} className={`transition-colors ${liked ? 'text-destructive fill-destructive' : ''}`} />
-          </button>
-          <button onClick={() => { setOpenComments(true); trig('comment'); }} className={`h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale ${shake.comment ? 'animate-shake' : ''}`} aria-label="Comments">
-            <MessageCircle size={20} />
-          </button>
+          <div className="relative">
+            <button
+              onClick={handleLikeClick}
+              disabled={likesLoading}
+              className={`h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale ${shake.like ? 'animate-shake' : ''} ${likesLoading ? 'opacity-50' : ''}`}
+              aria-label="Like"
+            >
+              <Heart size={20} className={`transition-colors ${liked ? 'text-destructive fill-destructive' : ''}`} />
+            </button>
+            {likeCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {likeCount > 99 ? '99+' : likeCount}
+              </span>
+            )}
+          </div>
+          <div className="relative">
+            <button
+              onClick={handleCommentClick}
+              className={`h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale ${shake.comment ? 'animate-shake' : ''}`}
+              aria-label="Comments"
+            >
+              <MessageCircle size={20} />
+            </button>
+            {commentCount > 0 && (
+              <span className="absolute -top-1 -right-1 bg-brand text-brand-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                {commentCount > 99 ? '99+' : commentCount}
+              </span>
+            )}
+          </div>
           <button onClick={() => { onShare(); trig('share'); }} className={`h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale ${shake.share ? 'animate-shake' : ''}`} aria-label="Share">
             <Share2 size={20} />
           </button>
@@ -108,25 +148,11 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
         </div>
       </div>
 
-      <Sheet open={openComments} onOpenChange={setOpenComments}>
-        <SheetContent side="bottom" className="h-[60vh]">
-          <SheetHeader>
-            <SheetTitle>Comments</SheetTitle>
-          </SheetHeader>
-          <div className="mt-4 space-y-4">
-            {["Looks great!", "Is size M available?", "What are the store timings today?"] .map((c,i)=> (
-              <div key={i} className="flex items-start gap-3">
-                <div className="h-8 w-8 rounded-full bg-muted grid place-items-center text-xs">U{i+1}</div>
-                <p className="text-sm">{c}</p>
-              </div>
-            ))}
-          </div>
-          <div className="mt-4 flex gap-2">
-            <Input placeholder="Add a comment" />
-            <Button>Post</Button>
-          </div>
-        </SheetContent>
-      </Sheet>
+      <Comments
+        postId={post.id}
+        isOpen={openComments}
+        onClose={() => setOpenComments(false)}
+      />
     </article>
   );
 };
@@ -422,91 +448,29 @@ const Home = () => {
       {/* Full-screen post viewer */}
       {viewerOpen && posts.length > 0 && (
         <div className="fixed inset-0 bg-black/90 z-50 overflow-y-auto snap-y snap-mandatory">
-          {posts.map((post, i) => (
-            <section key={post.id} className="h-screen w-full relative snap-start">
-              <img
-                src={post.image}
-                alt={post.description || "Post image"}
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-              <div className="absolute right-3 bottom-28 flex flex-col items-center gap-3">
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Like functionality can be added here
-                  }}
-                  className="h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale"
-                  aria-label="Like"
-                >
-                  <Heart size={20} />
-                </button>
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    // Comment functionality can be added here
-                  }}
-                  className="h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale"
-                  aria-label="Comments"
-                >
-                  <MessageCircle size={20} />
-                </button>
-                <button
-                  onClick={async (e) => {
-                    e.stopPropagation();
-                    const shareData = { title: "LocalIt", text: `${post.store}: ${post.offer}`, url: window.location.href };
-                    try {
-                      if (navigator.share) {
-                        await navigator.share(shareData);
-                      } else {
-                        await navigator.clipboard.writeText(`${shareData.text} - ${shareData.url}`);
-                        toast.success("Link copied to clipboard");
-                      }
-                    } catch {}
-                  }}
-                  className="h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale"
-                  aria-label="Share"
-                >
-                  <Share2 size={20} />
-                </button>
-              </div>
-              <div className="absolute left-0 right-0 bottom-0 p-4 glass text-primary-foreground">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full overflow-hidden bg-background grid place-items-center">
-                    <img
-                      src={post.logoUrl}
-                      alt="store logo"
-                      className="p-1 object-contain w-full h-full"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">{post.store}</div>
-                    <div className="text-xs opacity-80 truncate">
-                      {post.description}
-                    </div>
-                  </div>
-                  {post.offer && (
-                    <div className="bg-destructive text-destructive-foreground px-2 py-1 rounded text-xs font-semibold">
-                      {post.offer}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => setViewerOpen(false)}
-                className="absolute top-4 right-4 bg-background text-foreground rounded-full h-9 px-3 text-sm"
-              >
-                Close
-              </button>
-            </section>
-          )).slice(startIndex).concat(posts.slice(0, startIndex).map((post, i) => (
-            <section key={`wrap-${post.id}`} className="h-screen w-full relative snap-start">
-              <img
-                src={post.image}
-                alt={post.description || "Post image"}
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-            </section>
-          )))}
+          {posts.slice(startIndex).concat(posts.slice(0, startIndex)).map((post, i) => (
+            <SearchResultPost
+              key={`viewer-${post.id}-${i}`}
+              post={post}
+              onShare={async () => {
+                const shareData = { title: "LocalIt", text: `${post.store}: ${post.offer}`, url: window.location.href };
+                try {
+                  if (navigator.share) {
+                    await navigator.share(shareData);
+                  } else {
+                    await navigator.clipboard.writeText(`${shareData.text} - ${shareData.url}`);
+                    toast.success("Link copied to clipboard");
+                  }
+                } catch {}
+              }}
+            />
+          ))}
+          <button
+            onClick={() => setViewerOpen(false)}
+            className="fixed top-4 right-4 bg-background text-foreground rounded-full h-9 px-3 text-sm z-10"
+          >
+            Close
+          </button>
         </div>
       )}
 
