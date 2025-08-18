@@ -6,10 +6,19 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
-import { processAIQuery, type SearchResult } from "@/lib/ai-service";
+import { processAIQuery, type SearchResult, type SearchIntent } from "@/lib/ai-service";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { generateBusinessSlug } from "@/lib/utils";
+import {
+  getSessionId,
+  getCurrentConversation,
+  createConversation,
+  saveMessage,
+  loadMessages,
+  updateConversationTimestamp,
+  type StoredMessage
+} from "@/lib/chat-service";
 
 type Message = {
   id: string;
@@ -18,16 +27,16 @@ type Message = {
   timestamp: Date;
   isThinking?: boolean;
   searchResults?: SearchResult[];
+  searchIntent?: SearchIntent;
+  thinkingMessages?: string[];
 };
 
-const mockMessages: Message[] = [
-  {
-    id: '1',
-    type: 'ai',
-    content: "Hi there! 👋 I'm your Localit AI assistant. I can help you find the perfect products and deals around Sarath City Mall.\n\nTry asking me things like:\n• \"I need running shoes\"\n• \"Where can I find pizza?\"\n• \"Show me electronics deals\"\n• \"Looking for formal wear\"\n\nWhat are you looking for today?",
-    timestamp: new Date(Date.now() - 5 * 60 * 1000),
-  }
-];
+const getWelcomeMessage = (): Message => ({
+  id: 'welcome',
+  type: 'ai',
+  content: "Hi there! 👋 I'm your Localit AI assistant. I can help you find the perfect products and deals around Sarath City Mall.\n\nTry asking me things like:\n• \"I need running shoes\"\n• \"Where can I find pizza?\"\n• \"Show me electronics deals\"\n• \"Looking for formal wear\"\n\nWhat are you looking for today?",
+  timestamp: new Date(),
+});
 
 const thinkingMessages = [
   "Understanding your request...",
@@ -47,17 +56,57 @@ const LocalitAI = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
-  const [messages, setMessages] = useState<Message[]>(mockMessages);
+  const [messages, setMessages] = useState<Message[]>([getWelcomeMessage()]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [currentThinkingMessage, setCurrentThinkingMessage] = useState(0);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [selectedPost, setSelectedPost] = useState<SearchResult | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
   // Get the previous page from location state or default to home
   const previousPage = location.state?.from || '/home';
+
+  // Initialize conversation on component mount
+  useEffect(() => {
+    const initializeConversation = async () => {
+      try {
+        const sessionId = getSessionId();
+        const existingConversation = await getCurrentConversation(sessionId);
+
+        if (existingConversation) {
+          // Load existing conversation
+          setConversationId(existingConversation.id);
+          const storedMessages = await loadMessages(existingConversation.id);
+
+          if (storedMessages.length > 0) {
+            // Convert stored messages to UI format
+            const uiMessages: Message[] = storedMessages.map(msg => ({
+              id: msg.id,
+              type: msg.type,
+              content: msg.content,
+              timestamp: msg.timestamp,
+              searchResults: msg.searchResults,
+              searchIntent: msg.searchIntent,
+              thinkingMessages: msg.thinkingMessages
+            }));
+            setMessages(uiMessages);
+          }
+        }
+        // If no existing conversation, we'll create one when the user sends their first message
+      } catch (error) {
+        console.error('Error initializing conversation:', error);
+        toast.error("Failed to load chat history");
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    initializeConversation();
+  }, []);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -118,6 +167,22 @@ const LocalitAI = () => {
     setIsTyping(true);
 
     try {
+      // Ensure we have a conversation ID
+      let currentConversationId = conversationId;
+      if (!currentConversationId) {
+        const sessionId = getSessionId();
+        currentConversationId = await createConversation(sessionId, query);
+        if (currentConversationId) {
+          setConversationId(currentConversationId);
+        }
+      }
+
+      // Save user message to database
+      if (currentConversationId) {
+        await saveMessage(currentConversationId, 'user', query);
+        await updateConversationTimestamp(currentConversationId);
+      }
+
       // Process query with AI
       const aiResponse = await processAIQuery(query);
 
@@ -130,6 +195,20 @@ const LocalitAI = () => {
       };
 
       setMessages(prev => [...prev, aiMessage]);
+
+      // Save AI message to database
+      if (currentConversationId) {
+        await saveMessage(
+          currentConversationId,
+          'ai',
+          aiResponse.content,
+          aiResponse.searchResults,
+          undefined, // searchIntent - we could store this if needed
+          thinkingMessages // Store the thinking messages used
+        );
+        await updateConversationTimestamp(currentConversationId);
+      }
+
     } catch (error) {
       console.error('Error processing AI query:', error);
       toast.error("Sorry, I'm having trouble processing your request. Please try again!");
@@ -142,6 +221,11 @@ const LocalitAI = () => {
       };
 
       setMessages(prev => [...prev, errorMessage]);
+
+      // Save error message to database
+      if (conversationId) {
+        await saveMessage(conversationId, 'ai', errorMessage.content);
+      }
     } finally {
       setIsTyping(false);
       setCurrentThinkingMessage(0);
@@ -246,7 +330,16 @@ const LocalitAI = () => {
       {/* Messages */}
       <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
         <div className="space-y-4">
-          {messages.map((message) => (
+          {isLoading ? (
+            // Loading state
+            <div className="flex items-center justify-center py-8">
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Loading conversation...</span>
+              </div>
+            </div>
+          ) : (
+            messages.map((message) => (
             <div
               key={message.id}
               className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -296,7 +389,8 @@ const LocalitAI = () => {
                 </div>
               )}
             </div>
-          ))}
+            ))
+          )}
 
           {/* Thinking indicator */}
           {isTyping && (
