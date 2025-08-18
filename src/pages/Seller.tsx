@@ -134,16 +134,20 @@ export default function Seller() {
           alt={`${business.name} cover`}
           className="w-full h-full object-cover"
         />
-        <div className="absolute -bottom-16 left-1/2 -translate-x-1/2 h-36 w-36 rounded-full bg-background shadow-xl grid place-items-center overflow-hidden border">
+      </section>
+
+      {/* Logo positioned outside cover section to be fully visible */}
+      <div className="relative -mt-16 mb-4 flex justify-center">
+        <div className="h-32 w-32 rounded-full bg-background shadow-xl grid place-items-center overflow-hidden border z-10">
           <img
             src={business.logo_url || "https://via.placeholder.com/144x144?text=Logo"}
             alt={`${business.name} logo`}
             className="p-3 object-contain w-full h-full"
           />
         </div>
-      </section>
+      </div>
 
-      <section className="mt-20 px-4">
+      <section className="px-4">
         <div className="flex items-start justify-between">
           <div className="min-w-0">
             <h1 className="text-xl font-semibold flex items-center gap-2">
@@ -230,7 +234,13 @@ export default function Seller() {
         {business.posts.length > 0 ? (
           <div className="mt-5 grid grid-cols-3 auto-rows-[80px] gap-2">
             {business.posts.map((post, idx) => {
-              const span = [5,6,8,9].includes(idx) ? "col-span-2 row-span-2" : "";
+              // Optimal grid pattern for 3-column layout:
+              // Large images at indices 3, 9, 15, 21... (3 + 6*n)
+              // This creates pattern: S S S L S S S S S L S S...
+              // Each large image (2x2) takes 4 cells, with 2 small images beside it
+              const isLarge = (idx - 3) % 6 === 0 && idx >= 3;
+              const span = isLarge ? "col-span-2 row-span-2" : "";
+
               return (
                 <button
                   key={post.id}
