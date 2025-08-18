@@ -6,6 +6,10 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
+import { processAIQuery, type SearchResult } from "@/lib/ai-service";
+import { toast } from "sonner";
+import ReactMarkdown from "react-markdown";
+import { generateBusinessSlug } from "@/lib/utils";
 
 type Message = {
   id: string;
@@ -13,22 +17,24 @@ type Message = {
   content: string;
   timestamp: Date;
   isThinking?: boolean;
+  searchResults?: SearchResult[];
 };
 
 const mockMessages: Message[] = [
   {
     id: '1',
     type: 'ai',
-    content: "Hi there! 👋 I'm your Localit AI assistant. I can help you find the perfect products and deals around Sarath City Mall. What are you looking for today?",
+    content: "Hi there! 👋 I'm your Localit AI assistant. I can help you find the perfect products and deals around Sarath City Mall.\n\nTry asking me things like:\n• \"I need running shoes\"\n• \"Where can I find pizza?\"\n• \"Show me electronics deals\"\n• \"Looking for formal wear\"\n\nWhat are you looking for today?",
     timestamp: new Date(Date.now() - 5 * 60 * 1000),
   }
 ];
 
 const thinkingMessages = [
-  "Analyzing your request...",
+  "Understanding your request...",
   "Searching through local inventory...",
   "Finding the best deals for you...",
   "Checking store availability...",
+  "Analyzing product matches...",
   "Comparing prices across stores..."
 ];
 
@@ -45,6 +51,8 @@ const LocalitAI = () => {
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const [currentThinkingMessage, setCurrentThinkingMessage] = useState(0);
+  const [viewerOpen, setViewerOpen] = useState(false);
+  const [selectedPost, setSelectedPost] = useState<SearchResult | null>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -60,6 +68,28 @@ const LocalitAI = () => {
       }
     }
   }, [messages]);
+
+  // Keyboard support for viewer
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && viewerOpen) {
+        setViewerOpen(false);
+      }
+    };
+
+    if (viewerOpen) {
+      document.addEventListener('keydown', handleKeyDown);
+      // Prevent body scroll when viewer is open
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      document.body.style.overflow = 'unset';
+    };
+  }, [viewerOpen]);
 
   // Simulate AI thinking with rotating messages
   useEffect(() => {
@@ -82,47 +112,100 @@ const LocalitAI = () => {
       timestamp: new Date(),
     };
 
+    const query = inputValue;
     setMessages(prev => [...prev, userMessage]);
     setInputValue("");
     setIsTyping(true);
 
-    // Simulate AI processing time
-    setTimeout(() => {
-      const aiResponse = generateMockResponse(userMessage.content);
+    try {
+      // Process query with AI
+      const aiResponse = await processAIQuery(query);
+
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'ai',
-        content: aiResponse,
+        content: aiResponse.content,
+        timestamp: new Date(),
+        searchResults: aiResponse.searchResults,
+      };
+
+      setMessages(prev => [...prev, aiMessage]);
+    } catch (error) {
+      console.error('Error processing AI query:', error);
+      toast.error("Sorry, I'm having trouble processing your request. Please try again!");
+
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'ai',
+        content: "I'm experiencing some technical difficulties. Please try your search again!",
         timestamp: new Date(),
       };
-      
-      setMessages(prev => [...prev, aiMessage]);
+
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
       setCurrentThinkingMessage(0);
-    }, 3000 + Math.random() * 2000); // 3-5 seconds
+    }
   };
 
-  const generateMockResponse = (userInput: string): string => {
-    const input = userInput.toLowerCase();
-    
-    if (input.includes('shoe') || input.includes('sneaker') || input.includes('footwear')) {
-      return "🔍 I found some great shoe deals for you!\n\n👟 **Nike Air Max** - 25% off at SportZone (2nd Floor)\n👞 **Formal Leather Shoes** - Buy 1 Get 1 at Bata (Ground Floor)\n🏃‍♂️ **Running Shoes** - Up to 40% off at Decathlon (1st Floor)\n\nWould you like me to check specific sizes or brands?";
-    }
-    
-    if (input.includes('food') || input.includes('restaurant') || input.includes('eat')) {
-      return "🍽️ Here are the best food options near you:\n\n🍕 **Pizza Hut** - 30% off on large pizzas (Food Court)\n🍔 **McDonald's** - Happy Meal deals (Ground Floor)\n🥘 **Biryani Blues** - Special weekend combo (Food Court)\n🍰 **Cake Shop** - Fresh pastries and desserts (1st Floor)\n\nAny specific cuisine you're craving?";
-    }
-    
-    if (input.includes('cloth') || input.includes('dress') || input.includes('fashion')) {
-      return "👗 Fashion finds just for you!\n\n✨ **Zara** - End of season sale up to 50% off (2nd Floor)\n👔 **Van Heusen** - Formal wear collection (1st Floor)\n👕 **H&M** - New arrivals with 20% off (Ground Floor)\n🛍️ **Local Boutique** - Handcrafted ethnic wear (3rd Floor)\n\nWhat style are you looking for?";
-    }
-    
-    if (input.includes('electronic') || input.includes('phone') || input.includes('gadget')) {
-      return "📱 Tech deals alert!\n\n📱 **iPhone 15** - Special financing available at iStore (2nd Floor)\n💻 **Laptops** - Back to school offers at Croma (1st Floor)\n🎧 **Headphones** - Premium audio gear at Vijay Sales (Ground Floor)\n⌚ **Smart Watches** - Fitness trackers on sale (2nd Floor)\n\nLooking for anything specific?";
-    }
-    
-    // Default response
-    return `🤖 I understand you're looking for "${userInput}". Let me search through our local stores...\n\n🏪 I found several relevant options across different stores in Sarath City Mall. Here are some personalized recommendations:\n\n• **Store A** - Great deals on similar items\n• **Store B** - Premium quality options\n• **Store C** - Budget-friendly alternatives\n\nWould you like me to provide more specific details about any of these options?`;
+  // Handle business navigation
+  const handleBusinessClick = (businessName: string) => {
+    const businessSlug = generateBusinessSlug(businessName);
+    navigate(`/seller/${businessSlug}`);
+  };
+
+  // Handle post click for full-screen view
+  const handlePostClick = (result: SearchResult) => {
+    setSelectedPost(result);
+    setViewerOpen(true);
+  };
+
+  // Component to display search results
+  const SearchResultsDisplay = ({ results }: { results: SearchResult[] }) => {
+    if (!results || results.length === 0) return null;
+
+    return (
+      <div className="mt-3 space-y-2">
+        <p className="text-xs text-muted-foreground font-medium">Found {results.length} result(s):</p>
+        <div className="grid gap-2">
+          {results.slice(0, 3).map((result) => (
+            <div key={result.id} className="flex gap-2 p-2 bg-muted/50 rounded-lg hover:bg-muted/70 transition-colors">
+              {/* Product image - clickable for full-screen view */}
+              <button
+                onClick={() => handlePostClick(result)}
+                className="shrink-0 hover:opacity-80 transition-opacity"
+              >
+                <img
+                  src={result.photo_url}
+                  alt={result.description || 'Product'}
+                  className="w-12 h-12 object-cover rounded"
+                />
+              </button>
+
+              <div className="flex-1 min-w-0">
+                {/* Business name - clickable for business page */}
+                <button
+                  onClick={() => handleBusinessClick(result.business_name)}
+                  className="text-xs font-medium text-foreground truncate hover:text-primary transition-colors text-left"
+                >
+                  {result.business_name}
+                </button>
+
+                {result.offer && (
+                  <p className="text-xs text-destructive font-medium">
+                    {result.offer}
+                  </p>
+                )}
+
+                <p className="text-xs text-muted-foreground line-clamp-2">
+                  {result.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -181,7 +264,27 @@ const LocalitAI = () => {
                     : 'bg-muted'
                 }`}
               >
-                <p className="text-sm whitespace-pre-line">{message.content}</p>
+                {message.type === 'user' ? (
+                  <p className="text-sm whitespace-pre-line">{message.content}</p>
+                ) : (
+                  <div className="text-sm prose prose-sm max-w-none">
+                    <ReactMarkdown
+                      components={{
+                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
+                        strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                        em: ({ children }) => <em className="italic">{children}</em>,
+                        ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+                        ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                        li: ({ children }) => <li className="mb-1">{children}</li>,
+                      }}
+                    >
+                      {message.content}
+                    </ReactMarkdown>
+                  </div>
+                )}
+                {message.searchResults && message.searchResults.length > 0 && (
+                  <SearchResultsDisplay results={message.searchResults} />
+                )}
                 <p className="text-xs opacity-70 mt-1">
                   {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                 </p>
@@ -206,9 +309,9 @@ const LocalitAI = () => {
                   {thinkingMessages[currentThinkingMessage]}
                 </p>
                 <div className="flex gap-1 mt-2">
-                  <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-muted-foreground/40 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  <div className="w-2 h-2 bg-purple-500/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                  <div className="w-2 h-2 bg-purple-500/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                  <div className="w-2 h-2 bg-purple-500/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
               </div>
             </div>
@@ -238,9 +341,64 @@ const LocalitAI = () => {
           </Button>
         </div>
         <p className="text-xs text-muted-foreground mt-2 text-center">
-          AI responses are simulated for demo purposes
+          {import.meta.env.VITE_OPENAI_API_KEY && import.meta.env.VITE_OPENAI_API_KEY !== 'your_openai_api_key_here'
+            ? 'Powered by OpenAI • Real-time search results'
+            : 'Demo mode • Add OpenAI API key for full AI features'}
         </p>
       </div>
+
+      {/* Full-screen post viewer */}
+      {viewerOpen && selectedPost && (
+        <div className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center">
+          <div className="relative w-full h-full">
+            <img
+              src={selectedPost.photo_url}
+              alt={selectedPost.description || "Product image"}
+              className="absolute inset-0 w-full h-full object-contain"
+            />
+
+            {/* Close button */}
+            <button
+              onClick={() => setViewerOpen(false)}
+              className="absolute top-4 right-4 bg-background text-foreground rounded-full h-9 px-3 text-sm"
+            >
+              Close
+            </button>
+
+            {/* Product info overlay */}
+            <div className="absolute left-0 right-0 bottom-0 p-4 glass text-primary-foreground">
+              <div className="flex items-center gap-2">
+                <div className="h-8 w-8 rounded-full overflow-hidden bg-background grid place-items-center">
+                  <img
+                    src={selectedPost.business_logo_url || "https://via.placeholder.com/40x40?text=Logo"}
+                    alt="store logo"
+                    className="p-1 object-contain w-full h-full"
+                  />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <button
+                    onClick={() => {
+                      setViewerOpen(false);
+                      handleBusinessClick(selectedPost.business_name);
+                    }}
+                    className="text-sm font-medium hover:underline text-left"
+                  >
+                    {selectedPost.business_name}
+                  </button>
+                  <div className="text-xs opacity-80 truncate">
+                    {selectedPost.description}
+                  </div>
+                </div>
+                {selectedPost.offer && (
+                  <div className="bg-destructive text-destructive-foreground px-2 py-1 rounded text-xs font-semibold">
+                    {selectedPost.offer}
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </main>
   );
 };
