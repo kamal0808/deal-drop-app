@@ -12,6 +12,7 @@ interface Post {
   description: string;
   logoUrl: string;
   sellerSlug: string;
+  businessId: string;
 }
 
 interface SearchResultPostProps {

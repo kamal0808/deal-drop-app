@@ -14,6 +14,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { generateBusinessSlug } from "@/lib/utils";
 import { useLikes } from "@/hooks/useLikes";
 import { useComments } from "@/hooks/useComments";
+import { useFollows } from "@/hooks/useFollows";
 
 // Database types
 type DatabasePost = Tables<'posts'>;
@@ -33,19 +34,20 @@ type Post = {
   description: string;
   logoUrl: string;
   sellerSlug: string;
+  businessId: string;
 };
 
 
 
 const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => void }) => {
-  const [following, setFollowing] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const [openComments, setOpenComments] = useState(false);
   const [shake, setShake] = useState<{ like?: boolean; comment?: boolean; share?: boolean }>({});
 
-  // Use the likes and comments hooks
+  // Use the likes, comments, and follows hooks
   const { liked, likeCount, loading: likesLoading, toggleLike } = useLikes(post.id);
   const { commentCount } = useComments(post.id);
+  const { isFollowing, followerCount, loading: followLoading, toggleFollow } = useFollows(post.businessId);
 
   const trig = (key: keyof typeof shake) => {
     setShake((s) => ({ ...s, [key]: true }));
@@ -132,8 +134,13 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
         <div className={`absolute inset-x-0 bottom-0 p-3 transition-all ${expanded ? 'h-1/2' : 'h-1/4'} glass`}> 
           <div className="flex items-center justify-between">
             <Link to={`/seller/${post.sellerSlug}`} className="text-sm font-medium text-primary-foreground flex items-center gap-1"><BadgeCheck className="text-primary-foreground" size={14} /> {post.store}</Link>
-            <Button size="sm" variant={following ? 'secondary' : 'default'} onClick={() => setFollowing(f => !f)}>
-              {following ? 'Following' : 'Follow'}
+            <Button
+              size="sm"
+              variant={isFollowing ? 'secondary' : 'default'}
+              onClick={toggleFollow}
+              disabled={followLoading}
+            >
+              {followLoading ? 'Loading...' : (isFollowing ? 'Following' : 'Follow')}
             </Button>
           </div>
           <div className="mt-3 flex gap-3 items-start">
@@ -190,7 +197,8 @@ const Home = () => {
       store: dbPost.business.name,
       description: dbPost.description || "Check out this amazing deal!",
       logoUrl: dbPost.business.logo_url || "https://via.placeholder.com/40x40?text=Logo",
-      sellerSlug: generateBusinessSlug(dbPost.business.name)
+      sellerSlug: generateBusinessSlug(dbPost.business.name),
+      businessId: dbPost.business_id
     };
   };
 

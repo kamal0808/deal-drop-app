@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { AuthProvider } from "@/components/AuthProvider";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { FollowsProvider } from "@/contexts/FollowsContext";
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
 import NotFound from "./pages/NotFound";
@@ -23,7 +24,8 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
+          <FollowsProvider>
+            <Routes>
             <Route path="/" element={<Landing />} />
             <Route path="/home" element={
               <ProtectedRoute>
@@ -59,6 +61,7 @@ const App = () => (
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
           </Routes>
+          </FollowsProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
