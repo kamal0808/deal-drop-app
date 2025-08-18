@@ -1,7 +1,10 @@
 import hero from "@/assets/localit-hero.jpg";
 import Logo from "@/components/Logo";
 import { useSEO } from "@/hooks/useSEO";
-import { Link } from "react-router-dom";
+import { useAuth } from "@/hooks/useAuth";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Loader2 } from "lucide-react";
 
 const GoogleIcon = () => (
   <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 48 48" aria-hidden>
@@ -13,11 +16,25 @@ const GoogleIcon = () => (
 );
 
 const Landing = () => {
+  const { user, loading, signInWithGoogle } = useAuth();
+  const navigate = useNavigate();
+
   useSEO({
     title: "LocalIt – Hyperlocal Deals & Retail Social",
     description: "Discover the best hyperlocal deals near you. Join LocalIt and follow favorite stores.",
     canonical: window.location.origin + "/",
   });
+
+  // Redirect to home if user is already authenticated
+  useEffect(() => {
+    if (user && !loading) {
+      navigate('/home', { replace: true });
+    }
+  }, [user, loading, navigate]);
+
+  const handleGoogleSignIn = async () => {
+    await signInWithGoogle();
+  };
 
   return (
     <main className="min-h-screen relative flex items-center justify-center overflow-hidden">
@@ -31,12 +48,19 @@ const Landing = () => {
         <h1 className="sr-only">LocalIt – Hyperlocal shopping and deals</h1>
         <p className="text-sm text-muted-foreground mb-8">Shop smarter with hyperlocal deals from stores around you.</p>
 
-        <Link to="/home" className="block">
-          <button className="w-full inline-flex items-center justify-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-brand-foreground" style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-elevated)" }}>
+        <button
+          onClick={handleGoogleSignIn}
+          disabled={loading}
+          className="w-full inline-flex items-center justify-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-brand-foreground disabled:opacity-50 disabled:cursor-not-allowed"
+          style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-elevated)" }}
+        >
+          {loading ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
             <GoogleIcon />
-            Continue with Google
-          </button>
-        </Link>
+          )}
+          {loading ? 'Signing in...' : 'Continue with Google'}
+        </button>
 
         <p className="mt-4 text-xs text-muted-foreground">
           By continuing you agree to our <a className="story-link" href="#">Terms</a> and <a className="story-link" href="#">Privacy Policy</a>.

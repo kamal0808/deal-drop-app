@@ -2,6 +2,8 @@ import { useState } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import BottomNav from "@/components/BottomNav";
 import { ChevronRight } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
+import { useNavigate } from "react-router-dom";
 
 const followedRetailers = [
   "https://logo.clearbit.com/nike.com",
@@ -20,10 +22,13 @@ const generalLinks = [
 ];
 
 export default function Profile() {
-  useSEO({ 
-    title: "Profile – LocalIt", 
-    description: "Manage your LocalIt profile and preferences.", 
-    canonical: window.location.origin + "/profile" 
+  const { user, signOut } = useAuth();
+  const navigate = useNavigate();
+
+  useSEO({
+    title: "Profile – LocalIt",
+    description: "Manage your LocalIt profile and preferences.",
+    canonical: window.location.origin + "/profile"
   });
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
@@ -32,6 +37,11 @@ export default function Profile() {
     if (link === "Logout") {
       setShowLogoutConfirm(true);
     }
+  };
+
+  const handleLogout = async () => {
+    await signOut();
+    navigate('/', { replace: true });
   };
 
   return (
@@ -52,18 +62,23 @@ export default function Profile() {
 
         {/* Profile picture - positioned half in/half out */}
         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-[140px] h-[140px] rounded-full border-4 border-white overflow-hidden bg-gray-200">
-          <img 
-            src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face"
-            alt="Profile" 
+          <img
+            src={user?.user_metadata?.avatar_url || user?.user_metadata?.picture || `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.full_name || user?.email || 'User')}&background=e5e7eb&color=6b7280&size=140`}
+            alt="Profile"
             className="w-full h-full object-cover"
+            onError={(e) => {
+              e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(user?.user_metadata?.full_name || user?.email || 'User')}&background=e5e7eb&color=6b7280&size=140`;
+            }}
           />
         </div>
       </div>
 
       {/* User info */}
       <div className="text-center mt-20 px-4">
-        <h1 className="text-lg font-semibold text-foreground mb-1">Hey, RITIK SAHU</h1>
-        <p className="text-muted-foreground text-sm">ritikprajjwalsahu@gmail.com</p>
+        <h1 className="text-lg font-semibold text-foreground mb-1">
+          Hey, {user?.user_metadata?.full_name?.toUpperCase() || user?.email?.split('@')[0]?.toUpperCase() || 'USER'}
+        </h1>
+        <p className="text-muted-foreground text-sm">{user?.email}</p>
       </div>
 
       {/* Followed retailers section */}
@@ -114,9 +129,9 @@ export default function Profile() {
           <div className="fixed bottom-0 left-0 right-0 bg-white rounded-t-2xl p-6 z-50 animate-slide-up">
             <h3 className="text-lg font-bold text-center mb-6">Logout?</h3>
             <div className="space-y-3">
-              <button 
+              <button
                 onClick={() => {
-                  // Handle logout logic here
+                  handleLogout();
                   setShowLogoutConfirm(false);
                 }}
                 className="w-full py-3 text-destructive font-medium text-center border-b border-gray-100"
