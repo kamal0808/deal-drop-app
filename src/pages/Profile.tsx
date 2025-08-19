@@ -1,18 +1,14 @@
 import { useState } from "react";
 import { useSEO } from "@/hooks/useSEO";
 import BottomNav from "@/components/BottomNav";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
+import { useFollowedBusinesses } from "@/hooks/useFollowedBusinesses";
+import { generateBusinessSlug } from "@/lib/utils";
+import { Link } from "react-router-dom";
 
-const followedRetailers = [
-  "https://logo.clearbit.com/nike.com",
-  "https://logo.clearbit.com/adidas.com", 
-  "https://logo.clearbit.com/puma.com",
-  "https://logo.clearbit.com/apple.com",
-  "https://logo.clearbit.com/samsung.com",
-  "https://logo.clearbit.com/levis.com"
-];
+// Removed static followedRetailers array - now using real data from database
 
 const generalLinks = [
   "Terms & Conditions",
@@ -24,6 +20,7 @@ const generalLinks = [
 export default function Profile() {
   const { user, signOut } = useAuth();
   const navigate = useNavigate();
+  const { followedBusinesses, loading: followedLoading, count: followedCount } = useFollowedBusinesses();
 
   useSEO({
     title: "Profile – LocalIt",
@@ -83,21 +80,39 @@ export default function Profile() {
 
       {/* Followed retailers section */}
       <div className="px-4 mt-8">
-        <h2 className="text-base font-semibold mb-4">Followed Retailers</h2>
-        <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
-          {followedRetailers.map((logo, index) => (
-            <div key={index} className="w-[90px] h-[90px] rounded-full border overflow-hidden flex-shrink-0 bg-gray-100">
-              <img 
-                src={logo}
-                alt="Retailer logo" 
-                className="w-full h-full object-cover"
-                onError={(e) => {
-                  e.currentTarget.src = `https://ui-avatars.com/api/?name=Store&background=e5e7eb&color=6b7280&size=90`;
-                }}
-              />
-            </div>
-          ))}
-        </div>
+        <h2 className="text-base font-semibold mb-4">
+          Followed Retailers {followedCount > 0 && `(${followedCount})`}
+        </h2>
+
+        {followedLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-brand" />
+          </div>
+        ) : followedBusinesses.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">You haven't followed any businesses yet.</p>
+            <p className="text-xs mt-1">Start following businesses to see them here!</p>
+          </div>
+        ) : (
+          <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+            {followedBusinesses.map((business) => (
+              <Link
+                key={business.id}
+                to={`/seller/${generateBusinessSlug(business.name)}`}
+                className="w-[90px] h-[90px] rounded-full border overflow-hidden flex-shrink-0 bg-gray-100 hover:scale-105 transition-transform duration-200"
+              >
+                <img
+                  src={business.logo_url || `https://ui-avatars.com/api/?name=${encodeURIComponent(business.name)}&background=e5e7eb&color=6b7280&size=90`}
+                  alt={`${business.name} logo`}
+                  className="w-full h-full object-cover"
+                  onError={(e) => {
+                    e.currentTarget.src = `https://ui-avatars.com/api/?name=${encodeURIComponent(business.name)}&background=e5e7eb&color=6b7280&size=90`;
+                  }}
+                />
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* General section */}

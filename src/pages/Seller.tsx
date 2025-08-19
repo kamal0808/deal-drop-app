@@ -8,6 +8,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { generateBusinessSlug, formatPhoneForLink } from "@/lib/utils";
+import { useFollows } from "@/hooks/useFollows";
 
 // Database types
 type DatabaseBusiness = Tables<'businesses'>;
@@ -24,9 +25,11 @@ export default function Seller() {
 
   const [business, setBusiness] = useState<BusinessWithPosts | null>(null);
   const [loading, setLoading] = useState(true);
-  const [following, setFollowing] = useState(false);
   const [viewerOpen, setViewerOpen] = useState(false);
   const [startIndex, setStartIndex] = useState(0);
+
+  // Use the follow hook - will be initialized once we have business data
+  const { isFollowing, followerCount, loading: followLoading, toggleFollow } = useFollows(business?.id || '');
 
 
 
@@ -167,10 +170,11 @@ export default function Seller() {
             <div className="mt-3 flex items-center gap-2">
               <Button
                 size="sm"
-                variant={following ? 'secondary' : 'default'}
-                onClick={() => setFollowing(!following)}
+                variant={isFollowing ? 'secondary' : 'default'}
+                onClick={toggleFollow}
+                disabled={followLoading}
               >
-                {following ? 'Following' : 'Follow'}
+                {followLoading ? 'Loading...' : (isFollowing ? 'Following' : 'Follow')}
               </Button>
               {business.phone_number && (
                 <a
@@ -222,7 +226,7 @@ export default function Seller() {
             <div className="text-[11px] opacity-80 -mt-0.5">posts</div>
           </div>
           <div className="rounded-full bg-secondary text-secondary-foreground py-2">
-            <div className="text-base font-semibold">-</div>
+            <div className="text-base font-semibold">{followerCount}</div>
             <div className="text-[11px] opacity-80 -mt-0.5">followers</div>
           </div>
           <div className="rounded-full bg-secondary text-secondary-foreground py-2">

@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { generateBusinessSlug } from "@/lib/utils";
+import { BusinessCard } from "@/components/BusinessCard";
 
 type Business = Tables<'businesses'>;
 
@@ -323,37 +324,12 @@ export default function Discover() {
           ) : (
             // Dynamic businesses from database
             displayedBusinesses.map((business) => (
-              <button
+              <BusinessCard
                 key={business.id}
-                onClick={() => handleBusinessClick(business)}
-                className="relative rounded-xl overflow-hidden bg-card aspect-square grid place-items-center shadow hover:scale-105 transition-transform duration-200"
-              >
-                <img
-                  src={business.logo_url || DEFAULT_LOGO}
-                  alt={`${business.name} logo`}
-                  className="max-h-[80px] max-w-[100px] object-contain"
-                  loading="lazy"
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = DEFAULT_LOGO;
-                  }}
-                />
-                <div className="absolute inset-x-0 bottom-0 h-6 bg-foreground text-background text-[11px] grid place-items-center">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="h-6 px-2 py-0 text-[11px] text-background pointer-events-none"
-                  >
-                    Follow
-                  </Button>
-                </div>
-                {/* Business name tooltip on hover */}
-                <div className="absolute inset-0 bg-black/0 hover:bg-black/20 transition-colors duration-200 flex items-center justify-center opacity-0 hover:opacity-100">
-                  <span className="text-white text-xs font-medium text-center px-2">
-                    {business.name}
-                  </span>
-                </div>
-              </button>
+                business={business}
+                onClick={handleBusinessClick}
+                defaultLogo={DEFAULT_LOGO}
+              />
             ))
           )}
         </div>
