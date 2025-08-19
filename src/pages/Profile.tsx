@@ -11,10 +11,10 @@ import { Link } from "react-router-dom";
 // Removed static followedRetailers array - now using real data from database
 
 const generalLinks = [
-  "Terms & Conditions",
-  "Privacy Policy", 
-  "Send a feedback",
-  "Logout"
+  { name: "Terms & Conditions", path: "/terms" },
+  { name: "Privacy Policy", path: "/privacy" },
+  { name: "Send a feedback", path: null },
+  { name: "Logout", path: null }
 ];
 
 export default function Profile() {
@@ -30,8 +30,8 @@ export default function Profile() {
 
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
 
-  const handleLinkClick = (link: string) => {
-    if (link === "Logout") {
+  const handleLinkClick = (linkName: string) => {
+    if (linkName === "Logout") {
       setShowLogoutConfirm(true);
     }
   };
@@ -119,18 +119,37 @@ export default function Profile() {
       <div className="px-4 mt-8">
         <h2 className="text-base font-semibold mb-4 text-muted-foreground">GENERAL</h2>
         <div className="space-y-1">
-          {generalLinks.map((link) => (
-            <button
-              key={link}
-              onClick={() => handleLinkClick(link)}
-              className="w-full flex items-center justify-between py-3 text-left border-b border-gray-100 hover:bg-gray-50 transition-colors"
-            >
-              <span className={`text-sm ${link === "Logout" ? "text-destructive" : "text-foreground"} underline`}>
-                {link}
-              </span>
-              <ChevronRight size={16} className="text-muted-foreground" />
-            </button>
-          ))}
+          {generalLinks.map((link) => {
+            if (link.path) {
+              // Render as Link for pages with paths
+              return (
+                <Link
+                  key={link.name}
+                  to={link.path}
+                  className="w-full flex items-center justify-between py-3 text-left border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <span className="text-sm text-foreground underline">
+                    {link.name}
+                  </span>
+                  <ChevronRight size={16} className="text-muted-foreground" />
+                </Link>
+              );
+            } else {
+              // Render as button for actions
+              return (
+                <button
+                  key={link.name}
+                  onClick={() => handleLinkClick(link.name)}
+                  className="w-full flex items-center justify-between py-3 text-left border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                >
+                  <span className={`text-sm ${link.name === "Logout" ? "text-destructive" : "text-foreground"} underline`}>
+                    {link.name}
+                  </span>
+                  <ChevronRight size={16} className="text-muted-foreground" />
+                </button>
+              );
+            }
+          })}
         </div>
       </div>
 

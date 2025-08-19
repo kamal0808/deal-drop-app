@@ -14,6 +14,8 @@ import Seller from "./pages/Seller";
 import Community from "./pages/Community";
 import Profile from "./pages/Profile";
 import LocalitAI from "./pages/LocalitAI";
+import TermsAndConditions from "./pages/TermsAndConditions";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
 
 const queryClient = new QueryClient();
 
@@ -57,6 +59,8 @@ const App = () => (
                 <Seller />
               </ProtectedRoute>
             } />
+            <Route path="/terms" element={<TermsAndConditions />} />
+            <Route path="/privacy" element={<PrivacyPolicy />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="/index" element={<Navigate to="/" replace />} />
             <Route path="*" element={<NotFound />} />
