@@ -9,6 +9,7 @@ import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
 import { generateBusinessSlug, formatPhoneForLink } from "@/lib/utils";
 import { useFollows } from "@/hooks/useFollows";
+import { SearchResultPost } from "@/components/SearchResultPost";
 
 // Database types
 type DatabaseBusiness = Tables<'businesses'>;
@@ -279,62 +280,47 @@ export default function Seller() {
 
       {viewerOpen && business.posts.length > 0 && (
         <div className="fixed inset-0 bg-black/90 z-50 overflow-y-auto snap-y snap-mandatory">
-          {business.posts.map((post, i) => (
-            <section key={post.id} className="h-screen w-full relative snap-start">
-              <img
-                src={post.photo_url}
-                alt={post.description || "Post image"}
-                className="absolute inset-0 w-full h-full object-contain"
+          {business.posts.slice(startIndex).concat(business.posts.slice(0, startIndex)).map((post, i) => {
+            // Transform the post data to match SearchResultPost expected format
+            const transformedPost = {
+              id: post.id,
+              image: post.photo_url,
+              offer: post.offer || '',
+              store: business.name,
+              description: post.description || post.offer || "Check out this amazing deal!",
+              logoUrl: business.logo_url || "https://via.placeholder.com/32x32?text=Logo",
+              sellerSlug: generateBusinessSlug(business.name),
+              businessId: business.id,
+            };
+
+            return (
+              <SearchResultPost
+                key={`viewer-${post.id}-${i}`}
+                post={transformedPost}
+                onShare={async () => {
+                  const shareData = {
+                    title: "LocalIt",
+                    text: `${business.name}: ${post.offer || post.description || 'Check out this deal!'}`,
+                    url: window.location.href
+                  };
+                  try {
+                    if (navigator.share) {
+                      await navigator.share(shareData);
+                    } else {
+                      await navigator.clipboard.writeText(`${shareData.text} - ${shareData.url}`);
+                      toast.success("Link copied to clipboard");
+                    }
+                  } catch {}
+                }}
               />
-              <div className="absolute right-3 bottom-28 flex flex-col items-center gap-3">
-                <button className="h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale" aria-label="Like">
-                  <Heart size={20} />
-                </button>
-                <button className="h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale" aria-label="Comments">
-                  <MessageCircle size={20} />
-                </button>
-                <button className="h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale" aria-label="Share">
-                  <Share2 size={20} />
-                </button>
-              </div>
-              <div className="absolute left-0 right-0 bottom-0 p-4 glass text-primary-foreground">
-                <div className="flex items-center gap-2">
-                  <div className="h-8 w-8 rounded-full overflow-hidden bg-background grid place-items-center">
-                    <img
-                      src={business.logo_url || "https://via.placeholder.com/32x32?text=Logo"}
-                      alt="store logo"
-                      className="p-1 object-contain w-full h-full"
-                    />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium">{business.name}</div>
-                    <div className="text-xs opacity-80 truncate">
-                      {post.description || post.offer || "Check out this amazing deal!"}
-                    </div>
-                  </div>
-                  {post.offer && (
-                    <div className="bg-destructive text-destructive-foreground px-2 py-1 rounded text-xs font-semibold">
-                      {post.offer}
-                    </div>
-                  )}
-                </div>
-              </div>
-              <button
-                onClick={() => setViewerOpen(false)}
-                className="absolute top-4 right-4 bg-background text-foreground rounded-full h-9 px-3 text-sm"
-              >
-                Close
-              </button>
-            </section>
-          )).slice(startIndex).concat(business.posts.slice(0, startIndex).map((post, i) => (
-            <section key={`wrap-${post.id}`} className="h-screen w-full relative snap-start">
-              <img
-                src={post.photo_url}
-                alt={post.description || "Post image"}
-                className="absolute inset-0 w-full h-full object-contain"
-              />
-            </section>
-          )))}
+            );
+          })}
+          <button
+            onClick={() => setViewerOpen(false)}
+            className="fixed top-4 right-4 bg-background text-foreground rounded-full h-9 px-3 text-sm z-10"
+          >
+            Close
+          </button>
         </div>
       )}
 
