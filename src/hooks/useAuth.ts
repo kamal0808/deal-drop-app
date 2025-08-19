@@ -72,10 +72,18 @@ export const useAuthState = () => {
   const signInWithGoogle = async () => {
     try {
       setLoading(true);
+
+      // Determine the correct redirect URL based on environment
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      const productionUrl = import.meta.env.VITE_PRODUCTION_URL || 'https://localit.in';
+      const redirectTo = isLocalhost
+        ? `${window.location.origin}/home`
+        : `${productionUrl}/home`;
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/home`,
+          redirectTo,
         },
       });
 
