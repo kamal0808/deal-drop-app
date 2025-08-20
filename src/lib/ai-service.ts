@@ -31,10 +31,10 @@ export interface AIResponse {
 }
 
 // System prompt for understanding user queries
-const SYSTEM_PROMPT = `You are Localit AI, a smart shopping assistant for Sarath City Mall. Your role is to help users find products, deals, and businesses in the mall.
+const SYSTEM_PROMPT = `You are Localit AI, a smart shopping assistant for Sarath City Capital Mall. Your role is to help users find products, deals, and businesses in the mall.
 
 CONTEXT:
-- Localit is a hyperlocal retail discovery app focused on Sarath City Mall
+- Localit is a hyperlocal retail discovery app focused on Sarath City Capital Mall
 - Users can search for products, businesses, categories, and deals
 - The database contains posts (product listings) from various businesses with categories
 - Available data: business names, product descriptions, offers, categories
@@ -210,7 +210,7 @@ export async function generateAIResponse(
 
     const { text } = await generateText({
       model: openaiProvider('gpt-4o-mini'),
-      system: `You are Localit AI, a helpful shopping assistant for Sarath City Mall.
+      system: `You are Localit AI, a helpful shopping assistant for Sarath City Capital Mall.
 
       Respond conversationally and helpfully about the search results.
       - If products are found, highlight the best options with business names and offers
@@ -244,7 +244,7 @@ function generateFallbackResponse(
   searchIntent: SearchIntent
 ): string {
   if (searchResults.length === 0) {
-    return `I searched for "${userQuery}" but couldn't find any matching products in our database right now. Try searching for related terms or browse our categories to discover great deals at Sarath City Mall! 🛍️`;
+    return `I searched for "${userQuery}" but couldn't find any matching products in our database right now. Try searching for related terms or browse our categories to discover great deals at Sarath City Capital Mall! 🛍️`;
   }
 
   const resultCount = searchResults.length;
@@ -285,7 +285,7 @@ export async function processAIQuery(userQuery: string): Promise<AIResponse> {
     if (!searchIntent) {
       // Non-retail query - provide a helpful redirect
       return {
-        content: "I'm here to help you find products and deals around Sarath City Mall! 🛍️ Try asking me about things like 'shoes', 'restaurants', 'electronics deals', or any specific product you're looking for."
+        content: "I'm here to help you find products and deals around Sarath City Capital Mall! 🛍️ Try asking me about things like 'shoes', 'restaurants', 'electronics deals', or any specific product you're looking for."
       };
     }
 

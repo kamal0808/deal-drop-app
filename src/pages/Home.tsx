@@ -166,8 +166,8 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
 
 const Home = () => {
   useSEO({
-    title: "LocalIt Home – Best deals at Sarath City Mall",
-    description: "Scroll hyperlocal deals, follow stores, like, comment and share offers around Sarath City Mall.",
+    title: "LocalIt Home – Best deals at Sarath City Capital Mall",
+    description: "Scroll hyperlocal deals, follow stores, like, comment and share offers around Sarath City Capital Mall.",
     canonical: window.location.origin + "/home",
   });
 
@@ -363,7 +363,7 @@ const Home = () => {
     <main className="pb-24 max-w-md mx-auto">
       <header className="px-4 pt-4">
         <p className="text-xs text-muted-foreground">Here are the best deals at</p>
-        <h1 className="text-base font-semibold flex items-center gap-1"><MapPin size={16} className="text-brand" /> Sarath City Mall</h1>
+        <h1 className="text-base font-semibold flex items-center gap-1"><MapPin size={16} className="text-brand" /> Sarath City Capital Mall</h1>
       </header>
 
       <section className="px-4 mt-3">

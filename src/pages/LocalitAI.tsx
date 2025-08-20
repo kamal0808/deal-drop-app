@@ -34,7 +34,7 @@ type Message = {
 const getWelcomeMessage = (): Message => ({
   id: 'welcome',
   type: 'ai',
-  content: "Hi there! 👋 I'm your Localit AI assistant. I can help you find the perfect products and deals around Sarath City Mall.\n\nTry asking me things like:\n• \"I need running shoes\"\n• \"Where can I find pizza?\"\n• \"Show me electronics deals\"\n• \"Looking for formal wear\"\n\nWhat are you looking for today?",
+  content: "Hi there! 👋 I'm your Localit AI assistant. I can help you find the perfect products and deals around Sarath City Capital Mall.\n\nTry asking me things like:\n• \"I need running shoes\"\n• \"Where can I find pizza?\"\n• \"Show me electronics deals\"\n• \"Looking for formal wear\"\n\nWhat are you looking for today?",
   timestamp: new Date(),
 });
 
@@ -50,7 +50,7 @@ const thinkingMessages = [
 const LocalitAI = () => {
   useSEO({
     title: "Localit AI – Your Smart Shopping Assistant",
-    description: "Get personalized product recommendations and find the best deals around Sarath City Mall with AI assistance.",
+    description: "Get personalized product recommendations and find the best deals around Sarath City Capital Mall with AI assistance.",
     canonical: window.location.origin + "/ai",
   });
 
