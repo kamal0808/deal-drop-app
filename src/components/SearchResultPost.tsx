@@ -65,11 +65,11 @@ export const SearchResultPost: React.FC<SearchResultPostProps> = ({ post, onShar
         {/* Post info overlay */}
         <div className="absolute left-0 right-0 bottom-0 p-4 glass text-primary-foreground">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-full overflow-hidden bg-background grid place-items-center">
+            <div className="h-8 w-8 rounded-full overflow-hidden bg-white grid place-items-center">
               <img
                 src={post.logoUrl}
                 alt="store logo"
-                className="p-1 object-contain w-full h-full"
+                className="object-contain w-full h-full"
               />
             </div>
             <div className="flex-1 min-w-0">

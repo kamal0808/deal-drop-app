@@ -60,9 +60,9 @@ export default function RotatingSearch({
 
   return (
     <form onSubmit={handleSubmit} className="relative">
-      <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+      <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
       <Input
-        className="pl-9 pr-10"
+        className="pl-10 pr-12 h-12 shadow-lg"
         placeholder={inputValue ? "" : placeholders[idx]}
         aria-label="Search products"
         value={inputValue}
@@ -73,7 +73,7 @@ export default function RotatingSearch({
           type="button"
           variant="ghost"
           size="sm"
-          className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0 hover:bg-muted"
+          className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 p-0 hover:bg-muted"
           onClick={handleClear}
         >
           <X size={14} />

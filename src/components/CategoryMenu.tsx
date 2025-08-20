@@ -7,16 +7,18 @@ import { Tables } from "@/integrations/supabase/types";
 type Category = Tables<'categories'>;
 type CategoryWithIcon = Category & {
   Icon: LucideIcon;
-  color: "brand" | "primary" | "accent" | "secondary" | "muted" | "destructive";
+  iconColor: string;
 };
 
-// Color mapping for categories - cycles through available colors
-const colorOptions: ("brand" | "primary" | "accent" | "secondary" | "muted" | "destructive")[] = [
-  "brand", "primary", "accent", "secondary", "muted", "destructive"
+// Color mapping for categories - cycles through available colors for icons
+const iconColorOptions = [
+  "text-red-500", "text-blue-500", "text-green-500", "text-yellow-500",
+  "text-purple-500", "text-pink-500", "text-indigo-500", "text-orange-500",
+  "text-teal-500", "text-cyan-500", "text-lime-500", "text-amber-500"
 ];
 
-const getColorForCategory = (index: number): "brand" | "primary" | "accent" | "secondary" | "muted" | "destructive" => {
-  return colorOptions[index % colorOptions.length];
+const getIconColorForCategory = (index: number): string => {
+  return iconColorOptions[index % iconColorOptions.length];
 };
 
 const getIconComponent = (iconName: string): LucideIcon => {
@@ -67,7 +69,7 @@ export default function CategoryMenu({ selectedCategoryId = 'all', onCategorySel
         created_at: null,
         updated_at: null,
         Icon: Sparkles,
-        color: 'brand'
+        iconColor: 'text-yellow-500'
       };
 
       // Transform categories with icons and colors
@@ -80,7 +82,7 @@ export default function CategoryMenu({ selectedCategoryId = 'all', onCategorySel
           created_at: category.created_at,
           updated_at: category.updated_at,
           Icon: getIconComponent(category.icon),
-          color: getColorForCategory(index + 1) // +1 because "All" takes index 0
+          iconColor: getIconColorForCategory(index + 1) // +1 because "All" takes index 0
         }))
       ];
 
@@ -95,7 +97,7 @@ export default function CategoryMenu({ selectedCategoryId = 'all', onCategorySel
         created_at: null,
         updated_at: null,
         Icon: Sparkles,
-        color: 'brand'
+        iconColor: 'text-yellow-500'
       }]);
     } finally {
       setLoading(false);
@@ -122,18 +124,10 @@ export default function CategoryMenu({ selectedCategoryId = 'all', onCategorySel
   return (
     <nav className="w-full overflow-x-auto no-scrollbar" aria-label="Categories">
       <ul className="flex gap-4 py-2">
-        {categories.map(({ id, name, color, Icon }) => {
+        {categories.map(({ id, name, iconColor, Icon }) => {
           const isSelected = selectedCategoryId === id;
-          const map = {
-            brand: "bg-brand text-brand-foreground",
-            primary: "bg-primary text-primary-foreground",
-            accent: "bg-accent text-accent-foreground",
-            secondary: "bg-secondary text-secondary-foreground",
-            muted: "bg-muted text-muted-foreground",
-            destructive: "bg-destructive text-destructive-foreground",
-          } as const;
-          const colorClass = map[color];
-          const selectedClass = isSelected ? colorClass : "bg-muted/50 text-muted-foreground";
+          const backgroundClass = isSelected ? "bg-gray-100 ring-2 ring-offset-2 ring-brand/50" : "bg-gray-100";
+          const iconClass = iconColor;
 
           return (
             <li key={id} className="flex-shrink-0">
@@ -142,8 +136,8 @@ export default function CategoryMenu({ selectedCategoryId = 'all', onCategorySel
                 onClick={() => onCategorySelect?.(id)}
                 aria-pressed={isSelected}
               >
-                <span className={`h-10 w-10 rounded-full grid place-items-center shadow transition-all duration-200 ${selectedClass} ${isSelected ? 'ring-2 ring-offset-2 ring-brand/50' : ''}`}>
-                  <Icon size={18} />
+                <span className={`h-10 w-10 rounded-full grid place-items-center shadow transition-all duration-200 ${backgroundClass}`}>
+                  <Icon size={18} className={iconClass} />
                 </span>
                 <span className={`mt-1 text-xs text-center leading-tight transition-colors duration-200 ${name.length > 8 ? 'text-[10px]' : ''} ${isSelected ? 'font-semibold text-foreground' : 'text-muted-foreground'}`}>
                   {name}

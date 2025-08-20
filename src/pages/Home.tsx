@@ -80,7 +80,7 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
 
   return (
     <article className="relative rounded-xl overflow-hidden shadow-md bg-card animate-fade-in">
-      <div className="relative" style={{ height: 440 }}>
+      <div className="relative" style={{ height: 545 }}>
         <img
           src={post.image}
           alt={`${post.store} deal visual`}
@@ -88,15 +88,24 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
           loading="lazy"
           onClick={onImageClick}
         />
-        {/* Ribbon */}
-        <div className="absolute left-3 top-3">
-          <div className="bg-destructive text-destructive-foreground px-3 py-1 rounded-sm shadow"
-               style={{ transform: 'rotate(-6deg)' }}>
-            <span className="text-xs font-semibold leading-tight whitespace-pre-line">{post.offer}</span>
+        {/* Vertical Ribbon */}
+        <div className="absolute top-0" style={{ left: '30px' }}>
+          <div className="bg-destructive text-destructive-foreground px-3 py-4 shadow-lg"
+               style={{
+                 width: '57px',
+                 height: '96px',
+                 borderBottomLeftRadius: '12px',
+                 borderBottomRightRadius: '12px',
+                 display: 'flex',
+                 alignItems: 'center',
+                 justifyContent: 'center',
+                 textAlign: 'center'
+               }}>
+            <span className="text-xs font-bold leading-tight whitespace-pre-line transform -rotate-0">{post.offer}</span>
           </div>
         </div>
         {/* Action stack */}
-          <div className="absolute right-2 bottom-28 flex flex-col items-center gap-3">
+          <div className="absolute right-2 bottom-36 flex flex-col items-center gap-3">
           <div className="relative">
             <button
               onClick={handleLikeClick}
@@ -131,25 +140,44 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
           </button>
         </div>
         {/* Bottom glass panel */}
-        <div className={`absolute inset-x-0 bottom-0 p-3 transition-all ${expanded ? 'h-1/2' : 'h-1/4'} glass`}> 
-          <div className="flex items-center justify-between">
-            <Link to={`/seller/${post.sellerSlug}`} className="text-sm font-medium text-primary-foreground flex items-center gap-1"><BadgeCheck className="text-primary-foreground" size={14} /> {post.store}</Link>
+        <div className={`absolute inset-x-0 bottom-0 p-3 transition-all ${expanded ? 'h-1/2' : 'h-1/4'} glass`}>
+          <div className="flex items-center gap-2">
+            <Link to={`/seller/${post.sellerSlug}`} className="text-sm font-bold text-white flex items-center gap-1">
+              {post.store}
+            </Link>
+            <BadgeCheck className="text-white" size={16} fill="green" />
             <Button
               size="sm"
-              variant={isFollowing ? 'secondary' : 'default'}
+              variant={isFollowing ? 'default' : 'secondary'}
               onClick={toggleFollow}
               disabled={followLoading}
+              className="h-6"
             >
               {followLoading ? 'Loading...' : (isFollowing ? 'Following' : 'Follow')}
             </Button>
           </div>
           <div className="mt-3 flex gap-3 items-start">
-            <Link to={`/seller/${post.sellerSlug}`} className="shrink-0 h-9 w-9 rounded-full bg-brand text-brand-foreground grid place-items-center overflow-hidden">
-              <img src={post.logoUrl} alt={`${post.store} logo`} className="h-9 w-9 object-contain p-1" />
+            <Link to={`/seller/${post.sellerSlug}`} className="shrink-0 h-9 w-9 rounded-full bg-white grid place-items-center overflow-hidden">
+              <img src={post.logoUrl} alt={`${post.store} logo`} className="h-full w-full object-contain" />
             </Link>
-            <button className="text-left text-sm text-primary-foreground" onClick={() => setExpanded(e => !e)} aria-expanded={expanded}>
-              <span className={`${expanded ? '' : 'line-clamp-3'}`}>{post.description}</span>
-              <span className="ml-1 opacity-80">{expanded ? ' Show less' : ' …more'}</span>
+            <button className="text-left text-white" onClick={() => setExpanded(e => !e)} aria-expanded={expanded}>
+              {/* First row - Large text */}
+              <div className="text-base leading-relaxed">
+                {post.description.substring(0, 40)}
+              </div>
+
+              {/* Remaining text - Small text */}
+              {post.description.length > 80 && (
+                <div className={`mt-1 ${expanded ? '' : 'line-clamp-2'}`}>
+                  <div className="text-xs leading-relaxed opacity-90">
+                    {expanded ? post.description.substring(40) : post.description.substring(40, 160)}
+                  </div>
+                </div>
+              )}
+
+              {post.description.length > 80 && (
+                <span className="ml-1 opacity-80 text-xs">{expanded ? ' Show less' : ' …more'}</span>
+              )}
             </button>
           </div>
         </div>
@@ -361,12 +389,12 @@ const Home = () => {
 
   return (
     <main className="pb-24 max-w-md mx-auto">
-      <header className="px-4 pt-4">
+      <header className="px-8 pt-4">
         <p className="text-xs text-muted-foreground">Here are the best deals at</p>
         <h1 className="text-base font-semibold flex items-center gap-1"><MapPin size={16} className="text-brand" /> Sarath City Capital Mall</h1>
       </header>
 
-      <section className="px-4 mt-3">
+      <section className="px-8 mt-3">
         <RotatingSearch
           onSearch={handleSearch}
           onClear={handleSearchClear}
@@ -375,7 +403,7 @@ const Home = () => {
         />
       </section>
 
-      <section className="mt-2 px-3">
+      <section className="mt-4 px-8">
         <CategoryMenu
           selectedCategoryId={selectedCategoryId}
           onCategorySelect={handleCategorySelect}
@@ -383,7 +411,7 @@ const Home = () => {
       </section>
 
       {isSearchMode && searchQuery && (
-        <section className="px-4 mt-2">
+        <section className="px-8 mt-2">
           <div className="text-sm text-muted-foreground">
             Search results for "<span className="font-medium text-foreground">{searchQuery}</span>"
             {selectedCategoryId !== 'all' && (
@@ -393,15 +421,15 @@ const Home = () => {
         </section>
       )}
 
-      <section className="mt-2 px-5 space-y-4">
+      <section className="mt-2 px-8 space-y-4">
         {loading && posts.length === 0 ? (
           // Initial loading skeleton
           [...Array(3)].map((_, index) => (
             <div key={index} className="relative rounded-xl overflow-hidden shadow-md bg-card animate-pulse">
-              <div className="relative" style={{ height: 440 }}>
+              <div className="relative" style={{ height: 545 }}>
                 <div className="w-full h-full bg-muted" />
-                <div className="absolute left-3 top-3">
-                  <div className="bg-muted h-6 w-20 rounded-sm" />
+                <div className="absolute top-0" style={{ left: '30px' }}>
+                  <div className="bg-muted rounded-b-xl" style={{ width: '57px', height: '96px' }} />
                 </div>
                 <div className="absolute inset-x-0 bottom-0 p-3 h-1/4 bg-gradient-to-t from-black/50 to-transparent">
                   <div className="flex items-center justify-between">
