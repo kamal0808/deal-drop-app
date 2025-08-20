@@ -228,16 +228,25 @@ export default function Discover() {
 
   return (
     <main className="pb-24 max-w-md mx-auto">
-      <section className="px-4 pt-4">
-        <RotatingSearch
-          onSearch={handleSearch}
-          onClear={handleSearchClear}
-          searchQuery={searchQuery}
-          enableAutoSearch={true}
-        />
-      </section>
+      {/* Header with logo */}
+      <div className="bg-gray-800 h-20 flex items-center justify-center relative">
+        <div className="text-2xl font-bold">
+          <span className="text-white">loca</span>
+          <span className="text-brand">lit.</span>
+        </div>
 
-      <section className="mt-2 px-3">
+        {/* Search box - positioned half in/half out */}
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-1/2 w-full max-w-sm px-4">
+          <RotatingSearch
+            onSearch={handleSearch}
+            onClear={handleSearchClear}
+            searchQuery={searchQuery}
+            enableAutoSearch={true}
+          />
+        </div>
+      </div>
+
+      <section className="mt-8 px-3">
         <CategoryMenu
           selectedCategoryId={selectedCategoryId}
           onCategorySelect={handleCategorySelect}
@@ -282,25 +291,27 @@ export default function Discover() {
             ) : (
               // Dynamic offers from database
               businessesWithOffers.map((business) => (
-                <button
-                  key={business.id}
-                  onClick={() => handleBusinessClick(business)}
-                  className="relative h-[112px] w-[112px] rounded-xl overflow-hidden bg-card shadow-sm flex-shrink-0 grid place-items-center hover:scale-105 transition-transform duration-200"
-                >
-                  <img
-                    src={business.logo_url || DEFAULT_LOGO}
-                    alt={`${business.name} logo`}
-                    className="max-h-[64px] max-w-[80px] object-contain"
-                    loading="lazy"
-                    onError={(e) => {
-                      const target = e.target as HTMLImageElement;
-                      target.src = DEFAULT_LOGO;
-                    }}
-                  />
-                  <div className="absolute bottom-0 inset-x-0 h-5 bg-destructive text-destructive-foreground grid place-items-center text-[10px] font-semibold">
+                <div key={business.id} className="relative flex-shrink-0">
+                  <button
+                    onClick={() => handleBusinessClick(business)}
+                    className="h-[112px] w-[112px] rounded-xl overflow-hidden bg-card shadow-sm grid place-items-center hover:scale-105 transition-transform duration-200"
+                  >
+                    <img
+                      src={business.logo_url || DEFAULT_LOGO}
+                      alt={`${business.name} logo`}
+                      className="max-h-[64px] max-w-[80px] object-contain"
+                      loading="lazy"
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.src = DEFAULT_LOGO;
+                      }}
+                    />
+                  </button>
+                  {/* Offer pill - aligned with bottom edge of logo container */}
+                  <div className="absolute top-[112px] left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-destructive text-destructive-foreground px-2 py-1 rounded-full text-xs font-semibold whitespace-nowrap w-[90px] text-center">
                     {business.current_offer}
                   </div>
-                </button>
+                </div>
               ))
             )}
           </div>
@@ -308,12 +319,31 @@ export default function Discover() {
       </section>
 
       <section className="mt-4 px-4">
-        <div className="grid grid-cols-2 gap-3">
+        <h2 className="text-lg font-semibold text-black mb-4">Click to check latest arrivals & deals</h2>
+        <div className="grid grid-cols-2 gap-x-2 gap-y-6 justify-items-center">
           {loading ? (
             // Loading skeleton for grid
             Array.from({ length: 8 }).map((_, idx) => (
-              <div key={idx} className="relative rounded-xl overflow-hidden bg-card aspect-square animate-pulse">
-                <div className="w-full h-full bg-gray-200"></div>
+              <div key={idx} className="flex flex-col items-center shadow-lg">
+                <div className="relative overflow-hidden bg-gray-200 animate-pulse" style={{
+                  width: '163px',
+                  height: '163px',
+                  borderTopLeftRadius: '12px',
+                  borderTopRightRadius: '12px',
+                  borderBottomLeftRadius: '0px',
+                  borderBottomRightRadius: '0px'
+                }}>
+                  <div className="w-full h-full bg-gray-300"></div>
+                </div>
+                <div className="bg-gray-200 animate-pulse" style={{
+                  width: '163px',
+                  height: '52px',
+                  borderTopLeftRadius: '0px',
+                  borderTopRightRadius: '0px',
+                  borderBottomLeftRadius: '12px',
+                  borderBottomRightRadius: '12px',
+                  marginTop: '0px'
+                }}></div>
               </div>
             ))
           ) : displayedBusinesses.length === 0 ? (
@@ -337,10 +367,28 @@ export default function Discover() {
         {/* Loading more indicator */}
         {loadingMore && (
           <div className="flex justify-center py-4">
-            <div className="grid grid-cols-2 gap-3 w-full">
+            <div className="grid grid-cols-2 gap-x-2 gap-y-6 w-full justify-items-center">
               {Array.from({ length: 4 }).map((_, idx) => (
-                <div key={idx} className="relative rounded-xl overflow-hidden bg-card aspect-square animate-pulse">
-                  <div className="w-full h-full bg-gray-200"></div>
+                <div key={idx} className="flex flex-col items-center shadow-lg">
+                  <div className="relative overflow-hidden bg-gray-200 animate-pulse" style={{
+                    width: '163px',
+                    height: '163px',
+                    borderTopLeftRadius: '12px',
+                    borderTopRightRadius: '12px',
+                    borderBottomLeftRadius: '0px',
+                    borderBottomRightRadius: '0px'
+                  }}>
+                    <div className="w-full h-full bg-gray-300"></div>
+                  </div>
+                  <div className="bg-gray-200 animate-pulse" style={{
+                    width: '163px',
+                    height: '52px',
+                    borderTopLeftRadius: '0px',
+                    borderTopRightRadius: '0px',
+                    borderBottomLeftRadius: '12px',
+                    borderBottomRightRadius: '12px',
+                    marginTop: '0px'
+                  }}></div>
                 </div>
               ))}
             </div>
