@@ -246,7 +246,7 @@ export default function Discover() {
         </div>
       </div>
 
-      <section className="mt-8 px-3">
+      <section className="mt-12 px-3">
         <CategoryMenu
           selectedCategoryId={selectedCategoryId}
           onCategorySelect={handleCategorySelect}

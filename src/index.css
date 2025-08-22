@@ -124,8 +124,10 @@ All colors MUST be HSL.
   .story-link:hover::after { transform-origin: bottom left; transform: scaleX(1); }
   .glass { @apply bg-overlay/70 text-overlay-foreground backdrop-blur-md; }
   .line-clamp-3 { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
-  .no-scrollbar { scrollbar-width: none; } 
+  .no-scrollbar { scrollbar-width: none; }
   .no-scrollbar::-webkit-scrollbar { display: none; }
+  .scrollbar-hide { scrollbar-width: none; -ms-overflow-style: none; }
+  .scrollbar-hide::-webkit-scrollbar { display: none; }
   
   @keyframes slide-up {
     from { transform: translateY(100%); }

@@ -1,0 +1,862 @@
+{
+  "kind": "youtube#searchListResponse",
+  "etag": "VPgK23DBsUc4C3UV21KOuMDqCaE",
+  "nextPageToken": "CBkQAA",
+  "regionCode": "IN",
+  "pageInfo": {
+    "totalResults": 8876,
+    "resultsPerPage": 25
+  },
+  "items": [
+    {
+      "kind": "youtube#searchResult",
+      "etag": "3rpdCbE9kCfAbJCAS2dQika6ahA",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "4A43d7ltXec"
+      },
+      "snippet": {
+        "publishedAt": "2023-08-14T19:25:35Z",
+        "channelId": "UCXfCVIhnE88UtcrP4SHsTow",
+        "title": "SARATH CITY CAPITAL MALL HYDERABAD TELANGANA I Huge mall!!! #sarathcitycapitalmall #hyderabadmall",
+        "description": "Hi guys Warm welcome to 'Iamwanderful', my YouTube channel This video is about my visit to the Sarath City Capital Mall ...",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/4A43d7ltXec/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/4A43d7ltXec/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/4A43d7ltXec/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Iamwanderful",
+        "liveBroadcastContent": "none",
+        "publishTime": "2023-08-14T19:25:35Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "AfKmTCvixdTso2TWN2xDzcX_GSQ",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "YB6B8osJMng"
+      },
+      "snippet": {
+        "publishedAt": "2024-04-30T11:31:59Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "iPhone 14  BH - 99% Store Location- Sarath City Capital Mall ( AMB CINEMAS).",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/YB6B8osJMng/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/YB6B8osJMng/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/YB6B8osJMng/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2024-04-30T11:31:59Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "V8k8if0mtSu4iReIbKAak-gRfko",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "Eleu9DdA6Vs"
+      },
+      "snippet": {
+        "publishedAt": "2025-08-16T10:17:01Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Mobile Store At Sarath City Capital Mall (AMB MALL),2nd floor Inside Electronic Bazar.8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/Eleu9DdA6Vs/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/Eleu9DdA6Vs/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/Eleu9DdA6Vs/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-08-16T10:17:01Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "LLqEUX057U2sQW_cGgdbu-zk5ck",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "XvX3yXqtV3E"
+      },
+      "snippet": {
+        "publishedAt": "2025-01-09T08:49:10Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "SecondHand iPhone. Store-Sarath City Capital Mall ( AMB MALL)(2nd floor). For More Info-8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/XvX3yXqtV3E/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/XvX3yXqtV3E/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/XvX3yXqtV3E/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-01-09T08:49:10Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "uTou6g7N3qwj-hr8QI8nvuvyPFA",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "_BkH6aiJ4FM"
+      },
+      "snippet": {
+        "publishedAt": "2025-06-09T12:34:38Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Secondhand iPhone at reasonable Price.Store-Sarath City Capital Mall (AMB MALL). 8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/_BkH6aiJ4FM/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/_BkH6aiJ4FM/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/_BkH6aiJ4FM/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-06-09T12:34:38Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "ki5UxmwR69eftHroZnAwFoELmd4",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "-v8Tn015dO8"
+      },
+      "snippet": {
+        "publishedAt": "2025-07-01T14:15:21Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Used iPhone at reasonable Price Store-Sarath City Capital Mall (AMB MALL),8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/-v8Tn015dO8/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/-v8Tn015dO8/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/-v8Tn015dO8/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-07-01T14:15:21Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "-TZ0uz5kX73ze97SC4_IPszbfxE",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "xVx03m3TQuU"
+      },
+      "snippet": {
+        "publishedAt": "2024-06-03T10:59:09Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "2nd Hand Apple Phone 14 pro. Store Location - Sarath City Capital Mall ( AMB CINEMAS) - 8638114825.",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/xVx03m3TQuU/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/xVx03m3TQuU/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/xVx03m3TQuU/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2024-06-03T10:59:09Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "E_2DTvYBzpEMleVp-JErjm0oO_c",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "tokeZF8B1HU"
+      },
+      "snippet": {
+        "publishedAt": "2025-03-15T09:20:31Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Secondhand Samsung galaxy z fold5,Store-Sarath City Capital Mall (AMB MALL)(Call-8639114825)",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/tokeZF8B1HU/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/tokeZF8B1HU/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/tokeZF8B1HU/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-03-15T09:20:31Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "B2sZCUBM8-DfYTXygzEXB2dzHpI",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "zA1sqwytboM"
+      },
+      "snippet": {
+        "publishedAt": "2024-05-03T07:28:37Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "2nd hand iPhone Store Location - Sarath City Capital Mall ( AMB CINEMAS). Please call - 8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/zA1sqwytboM/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/zA1sqwytboM/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/zA1sqwytboM/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2024-05-03T07:28:37Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "YvxFoZYxykTfK9ux3luxLbxKwL4",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "bqawM79W1J4"
+      },
+      "snippet": {
+        "publishedAt": "2025-06-12T13:39:30Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Secondhand iPhone at reasonable Price Store-Sarath City Capital Mall AMB MALL),2nd floor. 8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/bqawM79W1J4/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/bqawM79W1J4/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/bqawM79W1J4/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-06-12T13:39:30Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "_gdo7GSvKYoQHL88-uDbBcPsGgU",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "t4ZeBA8FM-c"
+      },
+      "snippet": {
+        "publishedAt": "2025-05-25T14:19:53Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Secondhand iPhone at reasonable price store-Sarath City Capital Mall (AMB MALL), 📞8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/t4ZeBA8FM-c/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/t4ZeBA8FM-c/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/t4ZeBA8FM-c/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-05-25T14:19:53Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "9xX47G87o4-Alsq5CLsrJqZ-XTA",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "ZNH6wFOHFEc"
+      },
+      "snippet": {
+        "publishedAt": "2025-01-09T12:46:01Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Second Hand iPhone. Store-Sarath City Capital Mall (AMB MALL).For More Details Pls Call-8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/ZNH6wFOHFEc/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/ZNH6wFOHFEc/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/ZNH6wFOHFEc/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-01-09T12:46:01Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "lwbHjR-vdTlnvQz7MgTmVaIayfg",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "dmZuS6vV7UQ"
+      },
+      "snippet": {
+        "publishedAt": "2025-07-07T13:13:51Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Used iPhones Store at sarath city capital Mall (AMB MALL) Call-8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/dmZuS6vV7UQ/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/dmZuS6vV7UQ/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/dmZuS6vV7UQ/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-07-07T13:13:51Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "ccM0qEnITC8L41qpuN41cEUX7KU",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "Xezc0SI3Ypk"
+      },
+      "snippet": {
+        "publishedAt": "2024-09-06T15:38:35Z",
+        "channelId": "UCx4gxpg4rQDE7yZLlhg8a6Q",
+        "title": "Zudio Shopping || Sarath City Capital Mall Hyderabad || Hyderabad || AMB Mall || #zudio #citymall",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/Xezc0SI3Ypk/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/Xezc0SI3Ypk/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/Xezc0SI3Ypk/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "SRA Travel Duniya",
+        "liveBroadcastContent": "none",
+        "publishTime": "2024-09-06T15:38:35Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "l5jo7AgAWN3rxeVrSTqYNA_moDU",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "OKHQ8rWcnuE"
+      },
+      "snippet": {
+        "publishedAt": "2025-08-04T14:12:08Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Mobile Store,secondhand mobile store at sarath city capital Mall (AMB MALL),8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/OKHQ8rWcnuE/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/OKHQ8rWcnuE/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/OKHQ8rWcnuE/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-08-04T14:12:08Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "P0lxlaSdPW35bVH6OdBP3Safncc",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "ifXJJqzryqI"
+      },
+      "snippet": {
+        "publishedAt": "2024-12-31T08:19:08Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Store-Sarath City Capital Mall(AMB MALL) 2nd Floor Inside Electronic Bazar. Please Call-8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/ifXJJqzryqI/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/ifXJJqzryqI/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/ifXJJqzryqI/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2024-12-31T08:19:08Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "tz-IPkfyC9SGSjHQh5SllqQehTs",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "k0wTd4E2HWE"
+      },
+      "snippet": {
+        "publishedAt": "2025-05-31T15:54:58Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Secondhand iPhones at sarath City Capital  Mall (AMB MALL),2nd floor.8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/k0wTd4E2HWE/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/k0wTd4E2HWE/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/k0wTd4E2HWE/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-05-31T15:54:58Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "8I6pEYD1hgg262md7vdRKWp8JFQ",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "dSAQ2f77wVk"
+      },
+      "snippet": {
+        "publishedAt": "2025-04-06T07:43:31Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Store-Sarath City Capital Mall (AMB MALL),2nd floor,Inside Electronic bazar Call-8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/dSAQ2f77wVk/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/dSAQ2f77wVk/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/dSAQ2f77wVk/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-04-06T07:43:31Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "9WlYT88g9QXifcZK4cjU0tj-qG4",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "yrUiHk0ahfs"
+      },
+      "snippet": {
+        "publishedAt": "2024-09-07T09:50:07Z",
+        "channelId": "UCv36XZLwFy_d4NYF33Lu8PQ",
+        "title": "Sarath City Capital Mall Tour | Largest Shopping Mall Of Hyderabad Sarath City Full Tour",
+        "description": "Sarath City Capital Mall Tour | Largest Shopping Mall Of Hyderabad Sarath City Full Tour Follow me on   Instagram ...",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/yrUiHk0ahfs/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/yrUiHk0ahfs/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/yrUiHk0ahfs/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Sanarsh World",
+        "liveBroadcastContent": "none",
+        "publishTime": "2024-09-07T09:50:07Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "VtUMapl7N-KAvwsNCNtctDPHAME",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "nJ5_tsDFbM0"
+      },
+      "snippet": {
+        "publishedAt": "2023-09-16T17:38:47Z",
+        "channelId": "UCzlPPhc-4dKtgf3ESdmMT1Q",
+        "title": "Sarath City Capital Mall Hyderabad #shopping 🛍️💸",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/nJ5_tsDFbM0/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/nJ5_tsDFbM0/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/nJ5_tsDFbM0/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "way with irfan",
+        "liveBroadcastContent": "none",
+        "publishTime": "2023-09-16T17:38:47Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "mHfbBSl_xGYKGvFoOO5HiCUoyoA",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "Jg3vJ_6m1es"
+      },
+      "snippet": {
+        "publishedAt": "2025-01-17T11:49:07Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Store-Sarath City Capital Mall ( AMB MALL).2nd floor Inside Electronic Bazar. Please Call-8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/Jg3vJ_6m1es/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/Jg3vJ_6m1es/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/Jg3vJ_6m1es/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-01-17T11:49:07Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "G0EcwwAYqJsP6gyO2ktpMqo3Aac",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "4F18YvJXrT4"
+      },
+      "snippet": {
+        "publishedAt": "2025-07-22T10:23:05Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Used Mobile Store In Hyderabad. Store-Sarath City Capital Mall (AMB MALL),2nd Floor. 8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/4F18YvJXrT4/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/4F18YvJXrT4/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/4F18YvJXrT4/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-07-22T10:23:05Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "2yBW9GKEfAwlZjyqcWCTtiutt9A",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "ZQiYxearpDo"
+      },
+      "snippet": {
+        "publishedAt": "2024-06-12T09:36:18Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "2nd Hand iPhone 11/128GB. Store Location - Sarath City Capital Mall ( AMB CINEMAS). Call- 8639114825",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/ZQiYxearpDo/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/ZQiYxearpDo/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/ZQiYxearpDo/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2024-06-12T09:36:18Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "tdvyjhTA--kWv7RWMj8abvdWpUs",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "jSUWK9XQX1M"
+      },
+      "snippet": {
+        "publishedAt": "2025-03-18T12:39:06Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Store-Sarath City Capital Mall (AMB MALL)(2nd floor),Calling -8639114825/7013209436",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/jSUWK9XQX1M/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/jSUWK9XQX1M/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/jSUWK9XQX1M/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2025-03-18T12:39:06Z"
+      }
+    },
+    {
+      "kind": "youtube#searchResult",
+      "etag": "UPK8ltxmFkfEWMUWgHVYSqucQzo",
+      "id": {
+        "kind": "youtube#video",
+        "videoId": "8lI3RF0czj8"
+      },
+      "snippet": {
+        "publishedAt": "2024-08-22T10:14:59Z",
+        "channelId": "UCkDfcc2uloZCS8uczFwBw2A",
+        "title": "Store-Sarath City Capital Mall ( AMB MALL). Please Call- 8639114825/7013209436",
+        "description": "",
+        "thumbnails": {
+          "default": {
+            "url": "https://i.ytimg.com/vi/8lI3RF0czj8/default.jpg",
+            "width": 120,
+            "height": 90
+          },
+          "medium": {
+            "url": "https://i.ytimg.com/vi/8lI3RF0czj8/mqdefault.jpg",
+            "width": 320,
+            "height": 180
+          },
+          "high": {
+            "url": "https://i.ytimg.com/vi/8lI3RF0czj8/hqdefault.jpg",
+            "width": 480,
+            "height": 360
+          }
+        },
+        "channelTitle": "Renew Mobile.",
+        "liveBroadcastContent": "none",
+        "publishTime": "2024-08-22T10:14:59Z"
+      }
+    }
+  ]
+}

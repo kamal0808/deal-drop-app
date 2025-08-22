@@ -1,8 +1,9 @@
-import { Home, Compass, Users, User, Sparkles } from "lucide-react";
+import { Home, Play, Compass, Users, User, Sparkles } from "lucide-react";
 import { Link, useLocation, useNavigate } from "react-router-dom";
 
 const items = [
   { to: "/home", label: "Home", Icon: Home },
+  { to: "/feed", label: "Feed", Icon: Play },
   { to: "/discover", label: "Discover", Icon: Compass },
   { to: "/community", label: "Community", Icon: Users },
   { to: "/profile", label: "Profile", Icon: User },
@@ -24,7 +25,7 @@ export default function BottomNav({ active }: { active?: string }) {
 
   return (
     <nav aria-label="Primary" className="fixed bottom-3 inset-x-3 rounded-2xl bg-background/90 backdrop-blur border shadow-lg px-2 py-2">
-      <ul className="grid grid-cols-5 gap-1">
+      <ul className="grid grid-cols-6 gap-1">
         {items.map(({ to, label, Icon }) => {
           const isActive = pathname === to || active === label.toLowerCase() || (active === 'ai' && label === 'Localit AI');
           return (

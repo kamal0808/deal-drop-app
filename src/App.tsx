@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { FollowsProvider } from "@/contexts/FollowsContext";
 import Landing from "./pages/Landing";
 import Home from "./pages/Home";
+import Feed from "./pages/Feed";
 import NotFound from "./pages/NotFound";
 import Discover from "./pages/Discover";
 import Seller from "./pages/Seller";
@@ -32,6 +33,11 @@ const App = () => (
             <Route path="/home" element={
               <ProtectedRoute>
                 <Home />
+              </ProtectedRoute>
+            } />
+            <Route path="/feed" element={
+              <ProtectedRoute>
+                <Feed />
               </ProtectedRoute>
             } />
             <Route path="/discover" element={
