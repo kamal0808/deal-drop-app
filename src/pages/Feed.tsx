@@ -184,6 +184,12 @@ export default function Feed() {
                   )}
                   <div className="flex items-center gap-2 text-white/60 text-sm">
                     <span>{video.channelTitle}</span>
+                    {video.regionName && (
+                      <>
+                        <span>•</span>
+                        <span>{video.regionName}{video.city ? `, ${video.city}` : ''}</span>
+                      </>
+                    )}
                     <span>•</span>
                     <span>{new Date(video.publishedAt).toLocaleDateString()}</span>
                   </div>

@@ -1,4 +1,5 @@
-// Feed service - handles video data with easy mapping for future Supabase integration
+// Feed service - handles video data with Supabase integration
+import { supabase } from '@/integrations/supabase/client';
 
 export interface FeedVideo {
   id: string;
@@ -8,10 +9,11 @@ export interface FeedVideo {
   embedUrl: string;
   channelTitle: string;
   publishedAt: string;
-  // Future Supabase fields can be added here:
-  // businessId?: string;
-  // categoryId?: string;
-  // location?: string;
+  // Supabase fields:
+  regionName?: string;
+  city?: string;
+  searchQuery?: string;
+  // Future fields:
   // likes?: number;
   // comments?: number;
   // shares?: number;
@@ -22,8 +24,26 @@ export interface FeedVideo {
 const YOUTUBE_SHORTS_DATA_PATH = '/youtube-shorts.json';
 
 /**
+ * Transforms Supabase videos data to our FeedVideo format
+ */
+function transformSupabaseToFeedVideo(supabaseVideo: any): FeedVideo {
+  return {
+    id: supabaseVideo.video_id,
+    title: supabaseVideo.title,
+    description: supabaseVideo.description || '',
+    thumbnailUrl: supabaseVideo.thumbnail_url || '',
+    embedUrl: `https://www.youtube.com/embed/${supabaseVideo.video_id}`,
+    channelTitle: supabaseVideo.channel_title || '',
+    publishedAt: supabaseVideo.published_at || supabaseVideo.created_at,
+    regionName: supabaseVideo.region_name,
+    city: supabaseVideo.city,
+    searchQuery: supabaseVideo.search_query,
+  };
+}
+
+/**
  * Transforms YouTube API response to our FeedVideo format
- * This mapping makes it easy to switch to Supabase later
+ * Used as fallback when Supabase is unavailable
  */
 function transformYouTubeToFeedVideo(youtubeItem: any): FeedVideo {
   return {
@@ -38,40 +58,40 @@ function transformYouTubeToFeedVideo(youtubeItem: any): FeedVideo {
 }
 
 /**
- * Fetches feed videos from current data source (YouTube shorts)
- * TODO: Replace with Supabase query when ready
- * 
- * Future Supabase implementation would look like:
- * ```typescript
- * export async function getFeedVideos(): Promise<FeedVideo[]> {
- *   const { data, error } = await supabase
- *     .from('feed_videos')
- *     .select('*')
- *     .order('created_at', { ascending: false })
- *     .limit(50);
- *   
- *   if (error) throw error;
- *   return data || [];
- * }
- * ```
+ * Fetches feed videos from Supabase videos table
  */
 export async function getFeedVideos(): Promise<FeedVideo[]> {
   try {
-    const response = await fetch(YOUTUBE_SHORTS_DATA_PATH);
-    if (!response.ok) {
-      throw new Error('Failed to fetch video data');
-    }
-    
-    const data = await response.json();
-    
-    // Transform YouTube API response to our FeedVideo format
-    const videos: FeedVideo[] = data.items.map(transformYouTubeToFeedVideo);
-    
+    const { data, error } = await supabase
+      .from('videos')
+      .select('*')
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    // Transform Supabase data to FeedVideo format
+    const videos: FeedVideo[] = (data || []).map(transformSupabaseToFeedVideo);
+
     // Shuffle videos for variety (optional)
     return shuffleArray(videos);
   } catch (error) {
     console.error('Error fetching feed videos:', error);
-    throw error;
+
+    // Fallback to mock data if Supabase fails
+    try {
+      const response = await fetch(YOUTUBE_SHORTS_DATA_PATH);
+      if (!response.ok) {
+        throw new Error('Failed to fetch fallback video data');
+      }
+
+      const data = await response.json();
+      const videos: FeedVideo[] = data.items.map(transformYouTubeToFeedVideo);
+      return shuffleArray(videos);
+    } catch (fallbackError) {
+      console.error('Error fetching fallback videos:', fallbackError);
+      throw error; // Throw original error
+    }
   }
 }
 

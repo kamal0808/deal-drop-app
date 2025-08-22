@@ -273,6 +273,54 @@ export type Database = {
           },
         ]
       }
+      videos: {
+        Row: {
+          channel_title: string | null
+          city: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          published_at: string | null
+          region_id: string | null
+          region_name: string | null
+          search_query: string | null
+          thumbnail_url: string | null
+          title: string
+          updated_at: string | null
+          video_id: string
+        }
+        Insert: {
+          channel_title?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          published_at?: string | null
+          region_id?: string | null
+          region_name?: string | null
+          search_query?: string | null
+          thumbnail_url?: string | null
+          title: string
+          updated_at?: string | null
+          video_id: string
+        }
+        Update: {
+          channel_title?: string | null
+          city?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          published_at?: string | null
+          region_id?: string | null
+          region_name?: string | null
+          search_query?: string | null
+          thumbnail_url?: string | null
+          title?: string
+          updated_at?: string | null
+          video_id?: string
+        }
+        Relationships: []
+      }
     }
     Functions: {
       [_ in never]: never
