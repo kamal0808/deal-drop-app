@@ -3,7 +3,7 @@ import BottomNav from "@/components/BottomNav";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSEO } from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
-import { BadgeCheck, MapPin, Phone, MessageCircle, Navigation, Heart, MessageSquare, Share2, ArrowLeft, Loader2 } from "lucide-react";
+import { BadgeCheck, MapPin, Phone, MessageCircle, Navigation, Heart, MessageSquare, Share2, ArrowLeft, Loader2, Star, Clock, Globe, DollarSign, Utensils, Car, Accessibility } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
@@ -18,6 +18,36 @@ type DatabasePost = Tables<'posts'>;
 // Business with posts
 type BusinessWithPosts = DatabaseBusiness & {
   posts: DatabasePost[];
+};
+
+// Helper functions for displaying business data
+const formatPriceLevel = (priceLevel: number | null): string => {
+  if (priceLevel === null) return '';
+  const levels = ['Free', '$', '$$', '$$$', '$$$$'];
+  return levels[priceLevel] || '';
+};
+
+const formatBusinessStatus = (status: string | null): { text: string; color: string } => {
+  switch (status) {
+    case 'OPERATIONAL':
+      return { text: 'Open', color: 'text-green-600' };
+    case 'CLOSED_TEMPORARILY':
+      return { text: 'Temporarily Closed', color: 'text-yellow-600' };
+    case 'CLOSED_PERMANENTLY':
+      return { text: 'Permanently Closed', color: 'text-red-600' };
+    default:
+      return { text: 'Open', color: 'text-green-600' };
+  }
+};
+
+const formatOpeningHours = (openingHours: any): string => {
+  if (!openingHours || !openingHours.weekdayDescriptions) return '';
+  const today = new Date().getDay();
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const todayDescription = openingHours.weekdayDescriptions.find((desc: string) =>
+    desc.toLowerCase().includes(dayNames[today].toLowerCase())
+  );
+  return todayDescription || openingHours.weekdayDescriptions[0] || '';
 };
 
 export default function Seller() {
@@ -163,10 +193,54 @@ export default function Seller() {
                 {business.description}
               </p>
             )}
+            {business.primary_type && (
+              <p className="text-xs text-muted-foreground mt-1 capitalize">
+                {business.primary_type.replace(/_/g, ' ')}
+              </p>
+            )}
             {business.google_maps_link && (
               <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1">
                 <MapPin size={14} className="text-brand" /> View on Maps
               </p>
+            )}
+
+            {/* Rating and Business Info */}
+            <div className="flex flex-wrap items-center gap-3 mt-2">
+              {business.rating && (
+                <div className="flex items-center gap-1">
+                  <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                  <span className="text-sm font-medium">{business.rating}</span>
+                  {business.user_ratings_total && (
+                    <span className="text-xs text-muted-foreground">({business.user_ratings_total})</span>
+                  )}
+                </div>
+              )}
+
+              {business.price_level !== null && (
+                <div className="flex items-center gap-1">
+                  <DollarSign size={14} className="text-green-600" />
+                  <span className="text-sm font-medium">{formatPriceLevel(business.price_level)}</span>
+                </div>
+              )}
+
+              {business.business_status && (
+                <div className="flex items-center gap-1">
+                  <Clock size={14} className={formatBusinessStatus(business.business_status).color} />
+                  <span className={`text-sm font-medium ${formatBusinessStatus(business.business_status).color}`}>
+                    {formatBusinessStatus(business.business_status).text}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Business Hours */}
+            {business.opening_hours && formatOpeningHours(business.opening_hours) && (
+              <div className="mt-2">
+                <p className="text-xs text-muted-foreground flex items-center gap-1">
+                  <Clock size={12} />
+                  {formatOpeningHours(business.opening_hours)}
+                </p>
+              </div>
             )}
             <div className="mt-3 flex items-center gap-2">
               <Button
@@ -217,9 +291,81 @@ export default function Seller() {
                   <Navigation size={18} />
                 </a>
               )}
+              {business.website && (
+                <a
+                  href={business.website}
+                  target="_blank"
+                  className="h-9 w-9 rounded-full grid place-items-center bg-secondary text-secondary-foreground"
+                  aria-label="Website"
+                  rel="noreferrer"
+                >
+                  <Globe size={18} />
+                </a>
+              )}
             </div>
           </div>
         </div>
+
+        {/* Services and Amenities */}
+        {(business.serves_breakfast || business.serves_lunch || business.serves_dinner ||
+          business.takeout || business.delivery || business.dine_in ||
+          business.wheelchair_accessible_entrance) && (
+          <div className="mt-4 p-3 bg-secondary/30 rounded-lg">
+            <h3 className="text-sm font-semibold mb-2">Services & Amenities</h3>
+            <div className="flex flex-wrap gap-2">
+              {business.serves_breakfast && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-background rounded-full text-xs">
+                  <Utensils size={12} />
+                  Breakfast
+                </span>
+              )}
+              {business.serves_lunch && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-background rounded-full text-xs">
+                  <Utensils size={12} />
+                  Lunch
+                </span>
+              )}
+              {business.serves_dinner && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-background rounded-full text-xs">
+                  <Utensils size={12} />
+                  Dinner
+                </span>
+              )}
+              {business.takeout && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-background rounded-full text-xs">
+                  <Car size={12} />
+                  Takeout
+                </span>
+              )}
+              {business.delivery && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-background rounded-full text-xs">
+                  <Car size={12} />
+                  Delivery
+                </span>
+              )}
+              {business.dine_in && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-background rounded-full text-xs">
+                  <Utensils size={12} />
+                  Dine-in
+                </span>
+              )}
+              {business.wheelchair_accessible_entrance && (
+                <span className="inline-flex items-center gap-1 px-2 py-1 bg-background rounded-full text-xs">
+                  <Accessibility size={12} />
+                  Accessible
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Editorial Summary */}
+        {business.editorial_summary && (
+          <div className="mt-4 p-3 bg-secondary/20 rounded-lg">
+            <h3 className="text-sm font-semibold mb-1">About</h3>
+            <p className="text-sm text-muted-foreground">{business.editorial_summary}</p>
+          </div>
+        )}
 
         <div className="mt-4 grid grid-cols-3 gap-3 text-center">
           <div className="rounded-full bg-secondary text-secondary-foreground py-2">
@@ -231,8 +377,10 @@ export default function Seller() {
             <div className="text-[11px] opacity-80 -mt-0.5">followers</div>
           </div>
           <div className="rounded-full bg-secondary text-secondary-foreground py-2">
-            <div className="text-base font-semibold">-</div>
-            <div className="text-[11px] opacity-80 -mt-0.5">impressions</div>
+            <div className="text-base font-semibold">
+              {business.rating ? business.rating : '-'}
+            </div>
+            <div className="text-[11px] opacity-80 -mt-0.5">rating</div>
           </div>
         </div>
 

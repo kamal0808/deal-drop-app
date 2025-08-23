@@ -202,43 +202,172 @@ export type Database = {
       }
       businesses: {
         Row: {
+          business_status: string | null
           cover_photo_url: string | null
           created_at: string | null
+          curbside_pickup: boolean | null
           current_offer: string | null
+          delivery: boolean | null
           description: string | null
+          dine_in: boolean | null
+          editorial_summary: string | null
+          formatted_phone_number: string | null
           google_maps_link: string | null
           id: string
+          international_phone_number: string | null
           logo_url: string | null
           name: string
+          opening_hours: Json | null
           phone_number: string | null
+          place_id: string | null
+          plus_code: string | null
+          price_level: number | null
+          primary_type: string | null
+          rating: number | null
+          reservable: boolean | null
+          serves_beer: boolean | null
+          serves_breakfast: boolean | null
+          serves_brunch: boolean | null
+          serves_dinner: boolean | null
+          serves_lunch: boolean | null
+          serves_vegetarian_food: boolean | null
+          serves_wine: boolean | null
+          takeout: boolean | null
+          types: string[] | null
           updated_at: string | null
+          user_ratings_total: number | null
+          utc_offset: number | null
+          vicinity: string | null
+          website: string | null
+          wheelchair_accessible_entrance: boolean | null
           whatsapp_number: string | null
+          latitude: number | null
+          longitude: number | null
+          accepts_credit_cards: boolean | null
+          accepts_debit_cards: boolean | null
+          accepts_cash_only: boolean | null
+          accepts_nfc: boolean | null
+          good_for_children: boolean | null
+          good_for_groups: boolean | null
+          serves_dessert: boolean | null
+          wheelchair_accessible_parking: boolean | null
+          directions_uri: string | null
+          write_review_uri: string | null
+          reviews_uri: string | null
+          photos_uri: string | null
+          time_zone: string | null
         }
         Insert: {
+          business_status?: string | null
           cover_photo_url?: string | null
           created_at?: string | null
+          curbside_pickup?: boolean | null
           current_offer?: string | null
+          delivery?: boolean | null
           description?: string | null
+          dine_in?: boolean | null
+          editorial_summary?: string | null
+          formatted_phone_number?: string | null
           google_maps_link?: string | null
           id?: string
+          international_phone_number?: string | null
           logo_url?: string | null
           name: string
+          opening_hours?: Json | null
           phone_number?: string | null
+          place_id?: string | null
+          plus_code?: string | null
+          price_level?: number | null
+          primary_type?: string | null
+          rating?: number | null
+          reservable?: boolean | null
+          serves_beer?: boolean | null
+          serves_breakfast?: boolean | null
+          serves_brunch?: boolean | null
+          serves_dinner?: boolean | null
+          serves_lunch?: boolean | null
+          serves_vegetarian_food?: boolean | null
+          serves_wine?: boolean | null
+          takeout?: boolean | null
+          types?: string[] | null
           updated_at?: string | null
+          user_ratings_total?: number | null
+          utc_offset?: number | null
+          vicinity?: string | null
+          website?: string | null
+          wheelchair_accessible_entrance?: boolean | null
           whatsapp_number?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          accepts_credit_cards?: boolean | null
+          accepts_debit_cards?: boolean | null
+          accepts_cash_only?: boolean | null
+          accepts_nfc?: boolean | null
+          good_for_children?: boolean | null
+          good_for_groups?: boolean | null
+          serves_dessert?: boolean | null
+          wheelchair_accessible_parking?: boolean | null
+          directions_uri?: string | null
+          write_review_uri?: string | null
+          reviews_uri?: string | null
+          photos_uri?: string | null
+          time_zone?: string | null
         }
         Update: {
+          business_status?: string | null
           cover_photo_url?: string | null
           created_at?: string | null
+          curbside_pickup?: boolean | null
           current_offer?: string | null
+          delivery?: boolean | null
           description?: string | null
+          dine_in?: boolean | null
+          editorial_summary?: string | null
+          formatted_phone_number?: string | null
           google_maps_link?: string | null
           id?: string
+          international_phone_number?: string | null
           logo_url?: string | null
           name?: string
+          opening_hours?: Json | null
           phone_number?: string | null
+          place_id?: string | null
+          plus_code?: string | null
+          price_level?: number | null
+          primary_type?: string | null
+          rating?: number | null
+          reservable?: boolean | null
+          serves_beer?: boolean | null
+          serves_breakfast?: boolean | null
+          serves_brunch?: boolean | null
+          serves_dinner?: boolean | null
+          serves_lunch?: boolean | null
+          serves_vegetarian_food?: boolean | null
+          serves_wine?: boolean | null
+          takeout?: boolean | null
+          types?: string[] | null
           updated_at?: string | null
+          user_ratings_total?: number | null
+          utc_offset?: number | null
+          vicinity?: string | null
+          website?: string | null
+          wheelchair_accessible_entrance?: boolean | null
           whatsapp_number?: string | null
+          latitude?: number | null
+          longitude?: number | null
+          accepts_credit_cards?: boolean | null
+          accepts_debit_cards?: boolean | null
+          accepts_cash_only?: boolean | null
+          accepts_nfc?: boolean | null
+          good_for_children?: boolean | null
+          good_for_groups?: boolean | null
+          serves_dessert?: boolean | null
+          wheelchair_accessible_parking?: boolean | null
+          directions_uri?: string | null
+          write_review_uri?: string | null
+          reviews_uri?: string | null
+          photos_uri?: string | null
+          time_zone?: string | null
         }
         Relationships: []
       }
