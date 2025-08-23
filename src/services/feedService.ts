@@ -60,13 +60,20 @@ function transformYouTubeToFeedVideo(youtubeItem: any): FeedVideo {
 /**
  * Fetches feed videos from Supabase videos table
  */
-export async function getFeedVideos(): Promise<FeedVideo[]> {
+export async function getFeedVideos(regionId?: string): Promise<FeedVideo[]> {
   try {
-    const { data, error } = await supabase
+    let query = supabase
       .from('videos')
       .select('*')
       .order('created_at', { ascending: false })
       .limit(50);
+
+    // Filter by region if specified
+    if (regionId) {
+      query = query.eq('region_id', regionId);
+    }
+
+    const { data, error } = await query;
 
     if (error) throw error;
 
@@ -92,6 +99,29 @@ export async function getFeedVideos(): Promise<FeedVideo[]> {
       console.error('Error fetching fallback videos:', fallbackError);
       throw error; // Throw original error
     }
+  }
+}
+
+/**
+ * Fetches all regions from Supabase
+ */
+export async function getRegions(): Promise<Array<{
+  id: string;
+  name: string;
+  city: string | null;
+}>> {
+  try {
+    const { data, error } = await supabase
+      .from('regions')
+      .select('id, name, city')
+      .order('name', { ascending: true });
+
+    if (error) throw error;
+
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching regions:', error);
+    return [];
   }
 }
 

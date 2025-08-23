@@ -273,6 +273,42 @@ export type Database = {
           },
         ]
       }
+      regions: {
+        Row: {
+          city: string | null
+          created_at: string | null
+          formatted_address: string | null
+          id: string
+          latitude: number | null
+          longitude: number | null
+          name: string
+          place_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          city?: string | null
+          created_at?: string | null
+          formatted_address?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          place_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          city?: string | null
+          created_at?: string | null
+          formatted_address?: string | null
+          id?: string
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          place_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       videos: {
         Row: {
           channel_title: string | null
