@@ -30,6 +30,13 @@ export interface AIResponse {
   searchResults?: SearchResult[];
 }
 
+export interface VideoContext {
+  id?: string;
+  title: string;
+  thumbnailUrl: string;
+  summary?: string;
+}
+
 // System prompt for understanding user queries
 const SYSTEM_PROMPT = `You are Localit AI, a smart shopping assistant for Sarath City Capital Mall. Your role is to help users find products, deals, and businesses in the mall.
 
@@ -70,7 +77,7 @@ GUIDELINES:
 - Keep searchDescription user-friendly for the thinking mode display`;
 
 // Generate search intent from user query
-export async function generateSearchIntent(userQuery: string): Promise<SearchIntent | null> {
+export async function generateSearchIntent(userQuery: string, videoContext?: VideoContext): Promise<SearchIntent | null> {
   // Check if OpenAI API key is configured
   const apiKey = import.meta.env.VITE_OPENAI_API_KEY;
   if (!apiKey || apiKey === 'your_openai_api_key_here') {
@@ -79,12 +86,33 @@ export async function generateSearchIntent(userQuery: string): Promise<SearchInt
   }
 
   try {
+    // Build the prompt with video context if available
+    let prompt = `User query: "${userQuery}"`;
+
+    if (videoContext) {
+      prompt += `
+
+VIDEO CONTEXT:
+The user is asking about a video titled: "${videoContext.title}"`;
+
+      if (videoContext.summary) {
+        prompt += `
+
+VIDEO SUMMARY:
+${videoContext.summary}
+
+Based on this video content and the user's query, help them find related products, stores, or businesses mentioned in the video or similar to what's shown.`;
+      }
+    }
+
+    prompt += `
+
+Analyze this query and determine if it's related to shopping/retail. If yes, extract the search intent as JSON. If not retail-related, return null.`;
+
     const { text } = await generateText({
       model: openaiProvider('gpt-4o-mini'),
       system: SYSTEM_PROMPT,
-      prompt: `User query: "${userQuery}"
-
-      Analyze this query and determine if it's related to shopping/retail. If yes, extract the search intent as JSON. If not retail-related, return null.`,
+      prompt: prompt,
       temperature: 0.3,
     });
 
@@ -277,10 +305,10 @@ function generateFallbackResponse(
 }
 
 // Main AI chat function
-export async function processAIQuery(userQuery: string): Promise<AIResponse> {
+export async function processAIQuery(userQuery: string, videoContext?: VideoContext): Promise<AIResponse> {
   try {
     // Step 1: Generate search intent
-    const searchIntent = await generateSearchIntent(userQuery);
+    const searchIntent = await generateSearchIntent(userQuery, videoContext);
 
     if (!searchIntent) {
       // Non-retail query - provide a helpful redirect

@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
-import { processAIQuery, type SearchResult, type SearchIntent } from "@/lib/ai-service";
+import { processAIQuery, type SearchResult, type SearchIntent, type VideoContext } from "@/lib/ai-service";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
 import { generateBusinessSlug } from "@/lib/utils";
@@ -56,6 +56,7 @@ const LocalitAI = () => {
 
   const navigate = useNavigate();
   const location = useLocation();
+  const videoContext = location.state?.videoContext as VideoContext | undefined;
   const [messages, setMessages] = useState<Message[]>([getWelcomeMessage()]);
   const [inputValue, setInputValue] = useState("");
   const [isTyping, setIsTyping] = useState(false);
@@ -107,6 +108,30 @@ const LocalitAI = () => {
 
     initializeConversation();
   }, []);
+
+  // Handle video context when component loads
+  useEffect(() => {
+    if (videoContext) {
+      // Create a video context message and auto-send the default query
+      const videoMessage: Message = {
+        id: 'video-context',
+        type: 'user',
+        content: 'Find me stores or products mentioned in this video',
+        timestamp: new Date(),
+      };
+
+      // Add the video context message to show the video thumbnail
+      setMessages(prev => [...prev, videoMessage]);
+
+      // Set the input value to the default query
+      setInputValue('Find me stores or products mentioned in this video');
+
+      // Auto-send the query after a short delay
+      setTimeout(() => {
+        handleSendMessage();
+      }, 500);
+    }
+  }, [videoContext]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
@@ -183,8 +208,8 @@ const LocalitAI = () => {
         await updateConversationTimestamp(currentConversationId);
       }
 
-      // Process query with AI
-      const aiResponse = await processAIQuery(query);
+      // Process query with AI (include video context if available)
+      const aiResponse = await processAIQuery(query, videoContext);
 
       const aiMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -358,7 +383,29 @@ const LocalitAI = () => {
                 }`}
               >
                 {message.type === 'user' ? (
-                  <p className="text-sm whitespace-pre-line">{message.content}</p>
+                  <div>
+                    {/* Show video thumbnail if this is a video context message */}
+                    {message.id === 'video-context' && videoContext && (
+                      <div className="mb-3 p-3 bg-muted/50 rounded-lg border">
+                        <div className="flex items-center gap-3">
+                          <img
+                            src={videoContext.thumbnailUrl}
+                            alt={videoContext.title}
+                            className="w-16 h-12 object-cover rounded"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <p className="text-xs font-medium text-foreground truncate">
+                              {videoContext.title}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                              Video from feed
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    <p className="text-sm whitespace-pre-line">{message.content}</p>
+                  </div>
                 ) : (
                   <div className="text-sm prose prose-sm max-w-none">
                     <ReactMarkdown

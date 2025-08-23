@@ -320,6 +320,10 @@ export type Database = {
           region_id: string | null
           region_name: string | null
           search_query: string | null
+          summary: string | null
+          summary_created_at: string | null
+          summary_error: string | null
+          summary_status: string | null
           thumbnail_url: string | null
           title: string
           updated_at: string | null
@@ -335,6 +339,10 @@ export type Database = {
           region_id?: string | null
           region_name?: string | null
           search_query?: string | null
+          summary?: string | null
+          summary_created_at?: string | null
+          summary_error?: string | null
+          summary_status?: string | null
           thumbnail_url?: string | null
           title: string
           updated_at?: string | null
@@ -350,6 +358,10 @@ export type Database = {
           region_id?: string | null
           region_name?: string | null
           search_query?: string | null
+          summary?: string | null
+          summary_created_at?: string | null
+          summary_error?: string | null
+          summary_status?: string | null
           thumbnail_url?: string | null
           title?: string
           updated_at?: string | null

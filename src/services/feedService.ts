@@ -13,6 +13,10 @@ export interface FeedVideo {
   regionName?: string;
   city?: string;
   searchQuery?: string;
+  summary?: string;
+  summaryStatus?: string;
+  // Internal fields:
+  databaseId?: string; // The actual database ID for API calls
   // Future fields:
   // likes?: number;
   // comments?: number;
@@ -38,6 +42,9 @@ function transformSupabaseToFeedVideo(supabaseVideo: any): FeedVideo {
     regionName: supabaseVideo.region_name,
     city: supabaseVideo.city,
     searchQuery: supabaseVideo.search_query,
+    summary: supabaseVideo.summary,
+    summaryStatus: supabaseVideo.summary_status,
+    databaseId: supabaseVideo.id, // Store the database ID for API calls
   };
 }
 

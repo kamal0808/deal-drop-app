@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, MessageCircle, Share2, Play, Pause, Volume2, VolumeX } from "lucide-react";
+import { Heart, MessageCircle, Share2, Play, Pause, Volume2, VolumeX, Sparkles, Loader2 } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import BottomNav from "@/components/BottomNav";
 import RegionSelector from "@/components/RegionSelector";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
+import { useNavigate } from "react-router-dom";
 
 import { getFeedVideos, type FeedVideo } from "@/services/feedService";
+import { supabase } from "@/integrations/supabase/client";
 
 export default function Feed() {
   const [videos, setVideos] = useState<FeedVideo[]>([]);
@@ -16,6 +18,8 @@ export default function Feed() {
   const [mutedStates, setMutedStates] = useState<Record<number, boolean>>({});
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [loadedVideos, setLoadedVideos] = useState<Set<number>>(new Set([0])); // Track which videos are loaded
+  const [processingVideoId, setProcessingVideoId] = useState<string | null>(null); // Track which video is being processed for AI
+  const navigate = useNavigate();
 
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRefs = useRef<Record<number, HTMLIFrameElement | null>>({});
@@ -232,6 +236,79 @@ export default function Feed() {
     }
   };
 
+  const handleAISearch = async (video: FeedVideo) => {
+    let videoSummary = video.summary;
+
+    // Check if video has no summary or summary generation failed
+    if (!videoSummary || video.summaryStatus === 'failed' || video.summaryStatus === 'pending') {
+      if (!video.databaseId) {
+        toast.error('Unable to analyze video - missing video data');
+        return;
+      }
+
+      try {
+        // Set processing state
+        setProcessingVideoId(video.databaseId);
+
+        // Show loading toast
+        const loadingToast = toast.loading('Analyzing video content...', {
+          description: 'This may take a few moments'
+        });
+
+        // Call the summarize-video edge function
+        const { data, error } = await supabase.functions.invoke('summarize-video', {
+          body: { videoId: video.databaseId }
+        });
+
+        // Dismiss loading toast
+        toast.dismiss(loadingToast);
+
+        if (error) {
+          console.error('Error generating video summary:', error);
+          toast.error('Failed to analyze video content');
+          return;
+        }
+
+        if (data && data.summary) {
+          videoSummary = data.summary;
+
+          // Update the video in the local state to reflect the new summary
+          setVideos(prevVideos =>
+            prevVideos.map(v =>
+              v.databaseId === video.databaseId
+                ? { ...v, summary: data.summary, summaryStatus: 'completed' }
+                : v
+            )
+          );
+
+          toast.success('Video analyzed successfully!');
+        } else {
+          toast.warning('Video analysis completed but no summary available');
+        }
+
+      } catch (error) {
+        console.error('Error calling summarize-video function:', error);
+        toast.error('Failed to analyze video content');
+        return;
+      } finally {
+        // Clear processing state
+        setProcessingVideoId(null);
+      }
+    }
+
+    // Navigate to AI page with video context (including the summary)
+    navigate('/ai', {
+      state: {
+        videoContext: {
+          id: video.databaseId,
+          title: video.title,
+          thumbnailUrl: video.thumbnailUrl,
+          summary: videoSummary
+        }
+      }
+    });
+  };
+
   const handleRegionChange = (regionId: string | null) => {
     setSelectedRegionId(regionId);
     // Reset scroll position to top when changing regions
@@ -315,7 +392,7 @@ export default function Feed() {
               <iframe
                 ref={(el) => { videoRefs.current[index] = el; }}
                 src={`${video.embedUrl}?autoplay=${index === 0 ? '1' : '0'}&mute=1&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&loop=1&playlist=${video.id}&enablejsapi=1`}
-                className="w-full h-full object-cover"
+                className="w-full h-full object-cover relative z-0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                 allowFullScreen
                 style={{ border: 'none' }}
@@ -333,7 +410,7 @@ export default function Feed() {
             )}
 
             {/* Overlay controls and info */}
-            <div className="absolute inset-0 pointer-events-none">
+            <div className="absolute inset-0 pointer-events-none z-40">
               {/* Top gradient overlay */}
               <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/50 to-transparent" />
               
@@ -366,29 +443,48 @@ export default function Feed() {
               </div>
 
               {/* Action buttons - right side */}
-              <div className="absolute bottom-24 right-4 flex flex-col gap-6 pointer-events-auto">
+              <div className="absolute bottom-24 right-4 flex flex-col gap-6 pointer-events-auto z-50">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                  className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 backdrop-blur-sm text-white hover:from-purple-600 hover:to-pink-600 relative z-50 disabled:from-purple-400 disabled:to-pink-400 disabled:cursor-not-allowed"
+                  onClick={() => handleAISearch(video)}
+                  disabled={processingVideoId === video.databaseId}
+                  title={
+                    processingVideoId === video.databaseId
+                      ? "Analyzing video content..."
+                      : "AI Search - Find stores and products from this video"
+                  }
+                >
+                  {processingVideoId === video.databaseId ? (
+                    <Loader2 className="h-6 w-6 animate-spin" />
+                  ) : (
+                    <Sparkles className="h-6 w-6" />
+                  )}
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-50"
                   onClick={() => handleLike(video.id)}
                 >
                   <Heart className="h-6 w-6" />
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-50"
                   onClick={() => handleComment(video.id)}
                 >
                   <MessageCircle className="h-6 w-6" />
                 </Button>
-                
+
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-50"
                   onClick={() => handleShare(video)}
                 >
                   <Share2 className="h-6 w-6" />
@@ -396,11 +492,11 @@ export default function Feed() {
               </div>
 
               {/* Play/Pause button - center */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-auto">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-auto z-30">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 opacity-0 hover:opacity-100 transition-opacity"
+                  className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 opacity-0 hover:opacity-100 transition-opacity relative z-40"
                   onClick={() => togglePlay(index)}
                 >
                   {playingStates[index] ? (
@@ -412,11 +508,11 @@ export default function Feed() {
               </div>
 
               {/* Mute button - top right */}
-              <div className="absolute top-4 right-4 pointer-events-auto">
+              <div className="absolute top-4 right-4 pointer-events-auto z-30">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30"
+                  className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-40"
                   onClick={() => toggleMute(index)}
                 >
                   {mutedStates[index] ? (
