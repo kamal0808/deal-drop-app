@@ -1,0 +1,1080 @@
+{
+  "title": "Root",
+  "type": "object",
+  "properties": {
+    "places": {
+      "type": "array",
+      "items": {
+        "title": "places",
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "id": {
+            "type": "string"
+          },
+          "types": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "nationalPhoneNumber": {
+            "type": "string"
+          },
+          "internationalPhoneNumber": {
+            "type": "string"
+          },
+          "formattedAddress": {
+            "type": "string"
+          },
+          "addressComponents": {
+            "type": "array",
+            "items": {
+              "title": "addressComponents",
+              "type": "object",
+              "properties": {
+                "longText": {
+                  "type": "string"
+                },
+                "shortText": {
+                  "type": "string"
+                },
+                "types": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "languageCode": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "plusCode": {
+            "title": "plusCode",
+            "type": "object",
+            "properties": {
+              "globalCode": {
+                "type": "string"
+              },
+              "compoundCode": {
+                "type": "string"
+              }
+            }
+          },
+          "location": {
+            "title": "location",
+            "type": "object",
+            "properties": {
+              "latitude": {
+                "type": "number"
+              },
+              "longitude": {
+                "type": "number"
+              }
+            }
+          },
+          "viewport": {
+            "title": "viewport",
+            "type": "object",
+            "properties": {
+              "low": {
+                "title": "low",
+                "type": "object",
+                "properties": {
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  }
+                }
+              },
+              "high": {
+                "title": "high",
+                "type": "object",
+                "properties": {
+                  "latitude": {
+                    "type": "number"
+                  },
+                  "longitude": {
+                    "type": "number"
+                  }
+                }
+              }
+            }
+          },
+          "rating": {
+            "type": "number"
+          },
+          "googleMapsUri": {
+            "type": "string"
+          },
+          "regularOpeningHours": {
+            "title": "regularOpeningHours",
+            "type": "object",
+            "properties": {
+              "openNow": {
+                "type": "boolean"
+              },
+              "periods": {
+                "type": "array",
+                "items": {
+                  "title": "periods",
+                  "type": "object",
+                  "properties": {
+                    "open": {
+                      "title": "open",
+                      "type": "object",
+                      "properties": {
+                        "day": {
+                          "type": "number"
+                        },
+                        "hour": {
+                          "type": "number"
+                        },
+                        "minute": {
+                          "type": "number"
+                        }
+                      }
+                    },
+                    "close": {
+                      "title": "close",
+                      "type": "object",
+                      "properties": {
+                        "day": {
+                          "type": "number"
+                        },
+                        "hour": {
+                          "type": "number"
+                        },
+                        "minute": {
+                          "type": "number"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "weekdayDescriptions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nextCloseTime": {
+                "type": "string"
+              }
+            }
+          },
+          "utcOffsetMinutes": {
+            "type": "number"
+          },
+          "adrFormatAddress": {
+            "type": "string"
+          },
+          "businessStatus": {
+            "type": "string"
+          },
+          "priceLevel": {
+            "type": "string"
+          },
+          "userRatingCount": {
+            "type": "number"
+          },
+          "iconMaskBaseUri": {
+            "type": "string"
+          },
+          "iconBackgroundColor": {
+            "type": "string"
+          },
+          "displayName": {
+            "title": "displayName",
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "languageCode": {
+                "type": "string"
+              }
+            }
+          },
+          "primaryTypeDisplayName": {
+            "title": "primaryTypeDisplayName",
+            "type": "object",
+            "properties": {
+              "text": {
+                "type": "string"
+              },
+              "languageCode": {
+                "type": "string"
+              }
+            }
+          },
+          "takeout": {
+            "type": "boolean"
+          },
+          "delivery": {
+            "type": "boolean"
+          },
+          "dineIn": {
+            "type": "boolean"
+          },
+          "curbsidePickup": {
+            "type": "boolean"
+          },
+          "reservable": {
+            "type": "boolean"
+          },
+          "servesBreakfast": {
+            "type": "boolean"
+          },
+          "servesLunch": {
+            "type": "boolean"
+          },
+          "servesDinner": {
+            "type": "boolean"
+          },
+          "servesBeer": {
+            "type": "boolean"
+          },
+          "servesWine": {
+            "type": "boolean"
+          },
+          "servesBrunch": {
+            "type": "boolean"
+          },
+          "servesVegetarianFood": {
+            "type": "boolean"
+          },
+          "currentOpeningHours": {
+            "title": "currentOpeningHours",
+            "type": "object",
+            "properties": {
+              "openNow": {
+                "type": "boolean"
+              },
+              "periods": {
+                "type": "array",
+                "items": {
+                  "title": "periods",
+                  "type": "object",
+                  "properties": {
+                    "open": {
+                      "title": "open",
+                      "type": "object",
+                      "properties": {
+                        "day": {
+                          "type": "number"
+                        },
+                        "hour": {
+                          "type": "number"
+                        },
+                        "minute": {
+                          "type": "number"
+                        },
+                        "date": {
+                          "title": "date",
+                          "type": "object",
+                          "properties": {
+                            "year": {
+                              "type": "number"
+                            },
+                            "month": {
+                              "type": "number"
+                            },
+                            "day": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "close": {
+                      "title": "close",
+                      "type": "object",
+                      "properties": {
+                        "day": {
+                          "type": "number"
+                        },
+                        "hour": {
+                          "type": "number"
+                        },
+                        "minute": {
+                          "type": "number"
+                        },
+                        "date": {
+                          "title": "date",
+                          "type": "object",
+                          "properties": {
+                            "year": {
+                              "type": "number"
+                            },
+                            "month": {
+                              "type": "number"
+                            },
+                            "day": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "weekdayDescriptions": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              },
+              "nextCloseTime": {
+                "type": "string"
+              }
+            }
+          },
+          "currentSecondaryOpeningHours": {
+            "type": "array",
+            "items": {
+              "title": "currentSecondaryOpeningHours",
+              "type": "object",
+              "properties": {
+                "openNow": {
+                  "type": "boolean"
+                },
+                "periods": {
+                  "type": "array",
+                  "items": {
+                    "title": "periods",
+                    "type": "object",
+                    "properties": {
+                      "open": {
+                        "title": "open",
+                        "type": "object",
+                        "properties": {
+                          "day": {
+                            "type": "number"
+                          },
+                          "hour": {
+                            "type": "number"
+                          },
+                          "minute": {
+                            "type": "number"
+                          },
+                          "date": {
+                            "title": "date",
+                            "type": "object",
+                            "properties": {
+                              "year": {
+                                "type": "number"
+                              },
+                              "month": {
+                                "type": "number"
+                              },
+                              "day": {
+                                "type": "number"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "close": {
+                        "title": "close",
+                        "type": "object",
+                        "properties": {
+                          "day": {
+                            "type": "number"
+                          },
+                          "hour": {
+                            "type": "number"
+                          },
+                          "minute": {
+                            "type": "number"
+                          },
+                          "date": {
+                            "title": "date",
+                            "type": "object",
+                            "properties": {
+                              "year": {
+                                "type": "number"
+                              },
+                              "month": {
+                                "type": "number"
+                              },
+                              "day": {
+                                "type": "number"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "weekdayDescriptions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "secondaryHoursType": {
+                  "type": "string"
+                },
+                "nextCloseTime": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "regularSecondaryOpeningHours": {
+            "type": "array",
+            "items": {
+              "title": "regularSecondaryOpeningHours",
+              "type": "object",
+              "properties": {
+                "openNow": {
+                  "type": "boolean"
+                },
+                "periods": {
+                  "type": "array",
+                  "items": {
+                    "title": "periods",
+                    "type": "object",
+                    "properties": {
+                      "open": {
+                        "title": "open",
+                        "type": "object",
+                        "properties": {
+                          "day": {
+                            "type": "number"
+                          },
+                          "hour": {
+                            "type": "number"
+                          },
+                          "minute": {
+                            "type": "number"
+                          }
+                        }
+                      },
+                      "close": {
+                        "title": "close",
+                        "type": "object",
+                        "properties": {
+                          "day": {
+                            "type": "number"
+                          },
+                          "hour": {
+                            "type": "number"
+                          },
+                          "minute": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "weekdayDescriptions": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  }
+                },
+                "secondaryHoursType": {
+                  "type": "string"
+                },
+                "nextCloseTime": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "primaryType": {
+            "type": "string"
+          },
+          "shortFormattedAddress": {
+            "type": "string"
+          },
+          "reviews": {
+            "type": "array",
+            "items": {
+              "title": "reviews",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "relativePublishTimeDescription": {
+                  "type": "string"
+                },
+                "rating": {
+                  "type": "number"
+                },
+                "text": {
+                  "title": "text",
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "languageCode": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "originalText": {
+                  "title": "originalText",
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "languageCode": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "authorAttribution": {
+                  "title": "authorAttribution",
+                  "type": "object",
+                  "properties": {
+                    "displayName": {
+                      "type": "string"
+                    },
+                    "uri": {
+                      "type": "string"
+                    },
+                    "photoUri": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "publishTime": {
+                  "type": "string"
+                },
+                "flagContentUri": {
+                  "type": "string"
+                },
+                "googleMapsUri": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "title": "photos",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "widthPx": {
+                  "type": "number"
+                },
+                "heightPx": {
+                  "type": "number"
+                },
+                "authorAttributions": {
+                  "type": "array",
+                  "items": {
+                    "title": "authorAttributions",
+                    "type": "object",
+                    "properties": {
+                      "displayName": {
+                        "type": "string"
+                      },
+                      "uri": {
+                        "type": "string"
+                      },
+                      "photoUri": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "flagContentUri": {
+                  "type": "string"
+                },
+                "googleMapsUri": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "outdoorSeating": {
+            "type": "boolean"
+          },
+          "liveMusic": {
+            "type": "boolean"
+          },
+          "menuForChildren": {
+            "type": "boolean"
+          },
+          "servesCocktails": {
+            "type": "boolean"
+          },
+          "servesDessert": {
+            "type": "boolean"
+          },
+          "servesCoffee": {
+            "type": "boolean"
+          },
+          "goodForChildren": {
+            "type": "boolean"
+          },
+          "restroom": {
+            "type": "boolean"
+          },
+          "goodForGroups": {
+            "type": "boolean"
+          },
+          "paymentOptions": {
+            "title": "paymentOptions",
+            "type": "object",
+            "properties": {
+              "acceptsCreditCards": {
+                "type": "boolean"
+              },
+              "acceptsDebitCards": {
+                "type": "boolean"
+              },
+              "acceptsCashOnly": {
+                "type": "boolean"
+              },
+              "acceptsNfc": {
+                "type": "boolean"
+              }
+            }
+          },
+          "parkingOptions": {
+            "title": "parkingOptions",
+            "type": "object",
+            "properties": {
+              "freeParkingLot": {
+                "type": "boolean"
+              },
+              "valetParking": {
+                "type": "boolean"
+              }
+            }
+          },
+          "accessibilityOptions": {
+            "title": "accessibilityOptions",
+            "type": "object",
+            "properties": {
+              "wheelchairAccessibleEntrance": {
+                "type": "boolean"
+              },
+              "wheelchairAccessibleRestroom": {
+                "type": "boolean"
+              }
+            }
+          },
+          "addressDescriptor": {
+            "title": "addressDescriptor",
+            "type": "object",
+            "properties": {
+              "landmarks": {
+                "type": "array",
+                "items": {
+                  "title": "landmarks",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "placeId": {
+                      "type": "string"
+                    },
+                    "displayName": {
+                      "title": "displayName",
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string"
+                        },
+                        "languageCode": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "types": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "spatialRelationship": {
+                      "type": "string"
+                    },
+                    "straightLineDistanceMeters": {
+                      "type": "number"
+                    },
+                    "travelDistanceMeters": {
+                      "type": "number"
+                    }
+                  }
+                }
+              },
+              "areas": {
+                "type": "array",
+                "items": {
+                  "title": "areas",
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "placeId": {
+                      "type": "string"
+                    },
+                    "displayName": {
+                      "title": "displayName",
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string"
+                        },
+                        "languageCode": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "containment": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "googleMapsLinks": {
+            "title": "googleMapsLinks",
+            "type": "object",
+            "properties": {
+              "directionsUri": {
+                "type": "string"
+              },
+              "placeUri": {
+                "type": "string"
+              },
+              "writeAReviewUri": {
+                "type": "string"
+              },
+              "reviewsUri": {
+                "type": "string"
+              },
+              "photosUri": {
+                "type": "string"
+              }
+            }
+          },
+          "reviewSummary": {
+            "title": "reviewSummary",
+            "type": "object",
+            "properties": {
+              "text": {
+                "title": "text",
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "languageCode": {
+                    "type": "string"
+                  }
+                }
+              },
+              "flagContentUri": {
+                "type": "string"
+              },
+              "disclosureText": {
+                "title": "disclosureText",
+                "type": "object",
+                "properties": {
+                  "text": {
+                    "type": "string"
+                  },
+                  "languageCode": {
+                    "type": "string"
+                  }
+                }
+              },
+              "reviewsUri": {
+                "type": "string"
+              }
+            }
+          },
+          "timeZone": {
+            "title": "timeZone",
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string"
+              }
+            }
+          },
+          "postalAddress": {
+            "title": "postalAddress",
+            "type": "object",
+            "properties": {
+              "regionCode": {
+                "type": "string"
+              },
+              "languageCode": {
+                "type": "string"
+              },
+              "postalCode": {
+                "type": "string"
+              },
+              "administrativeArea": {
+                "type": "string"
+              },
+              "locality": {
+                "type": "string"
+              },
+              "addressLines": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "contextualContents": {
+      "type": "array",
+      "items": {
+        "title": "contextualContents",
+        "type": "object",
+        "properties": {
+          "reviews": {
+            "type": "array",
+            "items": {
+              "title": "reviews",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "relativePublishTimeDescription": {
+                  "type": "string"
+                },
+                "rating": {
+                  "type": "number"
+                },
+                "text": {
+                  "title": "text",
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "languageCode": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "originalText": {
+                  "title": "originalText",
+                  "type": "object",
+                  "properties": {
+                    "text": {
+                      "type": "string"
+                    },
+                    "languageCode": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "authorAttribution": {
+                  "title": "authorAttribution",
+                  "type": "object",
+                  "properties": {
+                    "displayName": {
+                      "type": "string"
+                    },
+                    "uri": {
+                      "type": "string"
+                    },
+                    "photoUri": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "publishTime": {
+                  "type": "string"
+                },
+                "flagContentUri": {
+                  "type": "string"
+                },
+                "googleMapsUri": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "photos": {
+            "type": "array",
+            "items": {
+              "title": "photos",
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string"
+                },
+                "widthPx": {
+                  "type": "number"
+                },
+                "heightPx": {
+                  "type": "number"
+                },
+                "authorAttributions": {
+                  "type": "array",
+                  "items": {
+                    "title": "authorAttributions",
+                    "type": "object",
+                    "properties": {
+                      "displayName": {
+                        "type": "string"
+                      },
+                      "uri": {
+                        "type": "string"
+                      },
+                      "photoUri": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                },
+                "flagContentUri": {
+                  "type": "string"
+                },
+                "googleMapsUri": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "justifications": {
+            "type": "array",
+            "items": {
+              "title": "justifications",
+              "type": "object",
+              "properties": {
+                "reviewJustification": {
+                  "title": "reviewJustification",
+                  "type": "object",
+                  "properties": {
+                    "highlightedText": {
+                      "title": "highlightedText",
+                      "type": "object",
+                      "properties": {
+                        "text": {
+                          "type": "string"
+                        },
+                        "highlightedTextRanges": {
+                          "type": "array",
+                          "items": {
+                            "title": "highlightedTextRanges",
+                            "type": "object",
+                            "properties": {
+                              "startIndex": {
+                                "type": "number"
+                              },
+                              "endIndex": {
+                                "type": "number"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "review": {
+                      "title": "review",
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string"
+                        },
+                        "relativePublishTimeDescription": {
+                          "type": "string"
+                        },
+                        "rating": {
+                          "type": "number"
+                        },
+                        "text": {
+                          "title": "text",
+                          "type": "object",
+                          "properties": {
+                            "text": {
+                              "type": "string"
+                            },
+                            "languageCode": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "originalText": {
+                          "title": "originalText",
+                          "type": "object",
+                          "properties": {
+                            "text": {
+                              "type": "string"
+                            },
+                            "languageCode": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "authorAttribution": {
+                          "title": "authorAttribution",
+                          "type": "object",
+                          "properties": {
+                            "displayName": {
+                              "type": "string"
+                            },
+                            "uri": {
+                              "type": "string"
+                            },
+                            "photoUri": {
+                              "type": "string"
+                            }
+                          }
+                        },
+                        "publishTime": {
+                          "type": "string"
+                        },
+                        "flagContentUri": {
+                          "type": "string"
+                        },
+                        "googleMapsUri": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "nextPageToken": {
+      "type": "string"
+    },
+    "searchUri": {
+      "type": "string"
+    }
+  }
+}

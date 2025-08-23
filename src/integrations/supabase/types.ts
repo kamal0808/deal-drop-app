@@ -256,6 +256,25 @@ export type Database = {
           reviews_uri: string | null
           photos_uri: string | null
           time_zone: string | null
+          outdoor_seating: boolean | null
+          live_music: boolean | null
+          menu_for_children: boolean | null
+          serves_cocktails: boolean | null
+          serves_coffee: boolean | null
+          restroom: boolean | null
+          free_parking_lot: boolean | null
+          valet_parking: boolean | null
+          wheelchair_accessible_restroom: boolean | null
+          adr_format_address: string | null
+          address_components: Json | null
+          postal_code: string | null
+          locality: string | null
+          administrative_area: string | null
+          icon_mask_base_uri: string | null
+          icon_background_color: string | null
+          current_opening_hours: Json | null
+          open_now: boolean | null
+          review_summary: string | null
         }
         Insert: {
           business_status?: string | null
@@ -312,6 +331,25 @@ export type Database = {
           reviews_uri?: string | null
           photos_uri?: string | null
           time_zone?: string | null
+          outdoor_seating?: boolean | null
+          live_music?: boolean | null
+          menu_for_children?: boolean | null
+          serves_cocktails?: boolean | null
+          serves_coffee?: boolean | null
+          restroom?: boolean | null
+          free_parking_lot?: boolean | null
+          valet_parking?: boolean | null
+          wheelchair_accessible_restroom?: boolean | null
+          adr_format_address?: string | null
+          address_components?: Json | null
+          postal_code?: string | null
+          locality?: string | null
+          administrative_area?: string | null
+          icon_mask_base_uri?: string | null
+          icon_background_color?: string | null
+          current_opening_hours?: Json | null
+          open_now?: boolean | null
+          review_summary?: string | null
         }
         Update: {
           business_status?: string | null
@@ -368,6 +406,25 @@ export type Database = {
           reviews_uri?: string | null
           photos_uri?: string | null
           time_zone?: string | null
+          outdoor_seating?: boolean | null
+          live_music?: boolean | null
+          menu_for_children?: boolean | null
+          serves_cocktails?: boolean | null
+          serves_coffee?: boolean | null
+          restroom?: boolean | null
+          free_parking_lot?: boolean | null
+          valet_parking?: boolean | null
+          wheelchair_accessible_restroom?: boolean | null
+          adr_format_address?: string | null
+          address_components?: Json | null
+          postal_code?: string | null
+          locality?: string | null
+          administrative_area?: string | null
+          icon_mask_base_uri?: string | null
+          icon_background_color?: string | null
+          current_opening_hours?: Json | null
+          open_now?: boolean | null
+          review_summary?: string | null
         }
         Relationships: []
       }
