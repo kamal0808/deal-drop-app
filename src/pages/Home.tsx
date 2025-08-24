@@ -1,704 +1,529 @@
-import { useEffect, useRef, useState } from "react";
-import { MapPin, Heart, MessageCircle, Share2, BadgeCheck, ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
+import { useState, useRef, useEffect } from "react";
+import { MapPin, Star, Clock, Heart, MessageCircle, Share2, Plus, ChevronRight, TrendingUp, Award, Users, Utensils, ShoppingBag, Zap, Coffee, Sparkles } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import BottomNav from "@/components/BottomNav";
-import CategoryMenu from "@/components/CategoryMenu";
-import RotatingSearch from "@/components/RotatingSearch";
-import { Comments } from "@/components/Comments";
-import { SearchResultPost } from "@/components/SearchResultPost";
 import { Button } from "@/components/ui/button";
-import { toast } from "sonner";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Link } from "react-router-dom";
+import RotatingSearch from "@/components/RotatingSearch";
+import CategoryMenu from "@/components/CategoryMenu";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 
-import { useLikes } from "@/hooks/useLikes";
-import { useComments } from "@/hooks/useComments";
-import { useFollows } from "@/hooks/useFollows";
+type Business = Tables<'businesses'>;
+type Category = Tables<'categories'>;
 
-// Database types
-type DatabasePost = Tables<'posts'>;
-type DatabaseBusiness = Tables<'businesses'>;
+interface FeedData {
+  topRatedBusinesses: Business[];
+  businessesWithOffers: Business[];
+  recentBusinesses: Business[];
+  categories: Category[];
+  restaurantBusinesses: Business[];
+  fashionBusinesses: Business[];
+  loading: boolean;
+}
 
-// Combined type for posts with business information
-type PostWithBusiness = DatabasePost & {
-  business: DatabaseBusiness;
-};
+// Component definitions using real data
+const HeroBanner = ({ business }: { business: Business }) => (
+  <div className="relative h-48 rounded-xl overflow-hidden mb-6 mx-4">
+    <img
+      src={business.cover_photo_url || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=800&h=400&fit=crop"}
+      alt={business.name}
+      className="w-full h-full object-cover"
+    />
+    <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent" />
+    <div className="absolute bottom-4 left-4 text-white">
+      <h2 className="text-xl font-bold">{business.name}</h2>
+      <p className="text-sm opacity-90">{business.editorial_summary || business.description || "Featured Business"}</p>
+      {business.current_offer && (
+        <Badge className="mt-2 bg-red-600 hover:bg-red-700">{business.current_offer}</Badge>
+      )}
+    </div>
+  </div>
+);
 
-// Photo type for individual photos
-type Photo = {
-  id: string;
-  photo_url: string;
-  width_px?: number;
-  height_px?: number;
-  display_order: number;
-};
+const HorizontalScrollCards = ({ businesses }: { businesses: Business[] }) => (
+  <div className="mb-6">
+    <h3 className="text-lg font-semibold mb-3 px-4">Trending Now</h3>
+    <div className="flex gap-3 px-4 overflow-x-auto scrollbar-hide">
+      {businesses.slice(0, 8).map((business) => (
+        <Link key={business.id} to={`/seller/${business.name.toLowerCase().replace(/\s+/g, '-')}`}>
+          <div className="flex-shrink-0 text-center">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-blue-400 to-purple-600 p-0.5 mb-2">
+              <div className="w-full h-full rounded-full bg-white p-1">
+                <img
+                  src={business.logo_url || "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop"}
+                  alt={business.name}
+                  className="w-full h-full rounded-full object-cover"
+                />
+              </div>
+            </div>
+            <p className="text-xs text-muted-foreground truncate w-16">{business.name.split(' ')[0]}</p>
+          </div>
+        </Link>
+      ))}
+    </div>
+  </div>
+);
 
-// UI Post type for the feed
-type Post = {
-  id: string;
-  photos: Photo[];
-  offer: string;
-  store: string;
-  description: string;
-  logoUrl: string;
-  businessId: string;
-};
-
-// Photo Carousel Component for multiple photos
-const PhotoCarousel = ({ photos, onImageClick }: { photos: Photo[]; onImageClick?: () => void }) => {
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [touchStart, setTouchStart] = useState<number | null>(null);
-  const [touchEnd, setTouchEnd] = useState<number | null>(null);
-  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Minimum swipe distance (in px)
-  const minSwipeDistance = 50;
-
-  const onTouchStart = (e: React.TouchEvent) => {
-    setTouchEnd(null);
-    setTouchStart(e.targetTouches[0].clientX);
-  };
-
-  const onTouchMove = (e: React.TouchEvent) => {
-    setTouchEnd(e.targetTouches[0].clientX);
-  };
-
-  const onTouchEnd = () => {
-    if (!touchStart || !touchEnd) return;
-
-    const distance = touchStart - touchEnd;
-    const isLeftSwipe = distance > minSwipeDistance;
-    const isRightSwipe = distance < -minSwipeDistance;
-
-    if (isLeftSwipe && currentIndex < photos.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-    }
-    if (isRightSwipe && currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-    }
-  };
-
-  const goToPrevious = () => {
-    setCurrentIndex(currentIndex > 0 ? currentIndex - 1 : photos.length - 1);
-  };
-
-  const goToNext = () => {
-    setCurrentIndex(currentIndex < photos.length - 1 ? currentIndex + 1 : 0);
-  };
-
-  // Auto-swiping functionality
-  const startAutoPlay = () => {
-    if (photos.length > 1 && isAutoPlaying) {
-      intervalRef.current = setInterval(() => {
-        setCurrentIndex(prev => prev < photos.length - 1 ? prev + 1 : 0);
-      }, 2000); // Auto-swipe every 2 seconds
-    }
-  };
-
-  const stopAutoPlay = () => {
-    if (intervalRef.current) {
-      clearInterval(intervalRef.current);
-      intervalRef.current = null;
-    }
-  };
-
-  // Intersection Observer to detect when carousel is in view
-  const carouselRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setIsAutoPlaying(true);
-            startAutoPlay();
-          } else {
-            setIsAutoPlaying(false);
-            stopAutoPlay();
-          }
-        });
-      },
-      { threshold: 0.5 } // Start auto-play when 50% of the carousel is visible
-    );
-
-    if (carouselRef.current) {
-      observer.observe(carouselRef.current);
-    }
-
-    return () => {
-      observer.disconnect();
-      stopAutoPlay();
+const GridTileSection = ({ categories }: { categories: Category[] }) => {
+  const getCategoryImage = (categoryName: string) => {
+    const imageMap: Record<string, string> = {
+      'Clothing': 'https://images.unsplash.com/photo-1445205170230-053b83016050?w=200&h=200&fit=crop',
+      'Electronics': 'https://images.unsplash.com/photo-1498049794561-7780e7231661?w=200&h=200&fit=crop',
+      'Beauty': 'https://images.unsplash.com/photo-1596462502278-27bfdc403348?w=200&h=200&fit=crop',
+      'Sports': 'https://images.unsplash.com/photo-1571019613454-1cb2f99b2d8b?w=200&h=200&fit=crop',
+      'Footwear': 'https://images.unsplash.com/photo-1549298916-b41d501d3772?w=200&h=200&fit=crop',
+      'Grocery': 'https://images.unsplash.com/photo-1542838132-92c53300491e?w=200&h=200&fit=crop',
     };
-  }, [photos.length, isAutoPlaying]);
-
-  // Stop auto-play on user interaction
-  const handleUserInteraction = () => {
-    setIsAutoPlaying(false);
-    stopAutoPlay();
+    return imageMap[categoryName] || 'https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=200&h=200&fit=crop';
   };
 
-  if (photos.length === 0) {
-    return (
-      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
-        <span className="text-gray-500">No image available</span>
-      </div>
-    );
-  }
+  const getCategoryEmoji = (categoryName: string) => {
+    const emojiMap: Record<string, string> = {
+      'Clothing': '👗',
+      'Electronics': '📱',
+      'Beauty': '💄',
+      'Sports': '⚽',
+      'Footwear': '👟',
+      'Grocery': '🛒',
+      'Books': '📚',
+      'Watches': '⌚',
+    };
+    return emojiMap[categoryName] || '🏪';
+  };
 
   return (
-    <div
-      ref={carouselRef}
-      className="relative w-full h-full"
-      onMouseEnter={() => {
-        if (isAutoPlaying) stopAutoPlay();
-      }}
-      onMouseLeave={() => {
-        if (isAutoPlaying) startAutoPlay();
-      }}
-    >
-      <img
-        src={photos[currentIndex].photo_url}
-        alt={`Photo ${currentIndex + 1} of ${photos.length}`}
-        className="w-full h-full object-cover cursor-pointer"
-        loading="lazy"
-        onClick={onImageClick}
-        onTouchStart={(e) => {
-          handleUserInteraction();
-          onTouchStart(e);
-        }}
-        onTouchMove={onTouchMove}
-        onTouchEnd={onTouchEnd}
-      />
-
-      {/* Navigation arrows for desktop */}
-      {photos.length > 1 && (
-        <>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleUserInteraction();
-              goToPrevious();
-            }}
-            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white rounded-full p-2 opacity-0 hover:opacity-100 transition-opacity"
-            aria-label="Previous photo"
-          >
-            <ChevronLeft size={20} />
-          </button>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              handleUserInteraction();
-              goToNext();
-            }}
-            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white rounded-full p-2 opacity-0 hover:opacity-100 transition-opacity"
-            aria-label="Next photo"
-          >
-            <ChevronRight size={20} />
-          </button>
-        </>
-      )}
-
-      {/* Photo indicators and auto-play control */}
-      {photos.length > 1 && (
-        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-3">
-          {/* Photo indicators */}
-          <div className="flex space-x-2">
-            {photos.map((_, index) => (
-              <button
-                key={index}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleUserInteraction();
-                  setCurrentIndex(index);
-                }}
-                className={`w-2 h-2 rounded-full transition-colors ${
-                  index === currentIndex ? 'bg-white' : 'bg-white/50'
-                }`}
-                aria-label={`Go to photo ${index + 1}`}
-              />
-            ))}
+    <div className="mb-6 px-4">
+      <h3 className="text-lg font-semibold mb-3">Shop by Category</h3>
+      <div className="grid grid-cols-2 gap-3">
+        {categories.slice(0, 4).map((category) => (
+          <div key={category.id} className="relative aspect-square rounded-xl overflow-hidden">
+            <img src={getCategoryImage(category.name)} alt={category.name} className="w-full h-full object-cover" />
+            <div className="absolute inset-0 bg-black/40 flex items-center justify-center">
+              <div className="text-center text-white">
+                <div className="text-2xl mb-1">{getCategoryEmoji(category.name)}</div>
+                <p className="font-semibold">{category.name}</p>
+              </div>
+            </div>
           </div>
-
-          {/* Auto-play toggle button */}
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (isAutoPlaying) {
-                setIsAutoPlaying(false);
-                stopAutoPlay();
-              } else {
-                setIsAutoPlaying(true);
-                startAutoPlay();
-              }
-            }}
-            className="bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
-            aria-label={isAutoPlaying ? "Pause auto-play" : "Start auto-play"}
-          >
-            {isAutoPlaying ? <Pause size={12} /> : <Play size={12} />}
-          </button>
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 };
 
-const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => void }) => {
-  const [expanded, setExpanded] = useState(false);
-  const [openComments, setOpenComments] = useState(false);
-  const [shake, setShake] = useState<{ like?: boolean; comment?: boolean; share?: boolean }>({});
+const BigFeaturedCard = ({ business }: { business: Business }) => (
+  <div className="mb-6 px-4">
+    <Card className="relative h-64 overflow-hidden">
+      <img
+        src={business.cover_photo_url || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=400&h=600&fit=crop"}
+        alt={business.name}
+        className="w-full h-full object-cover"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+      {business.current_offer && (
+        <div className="absolute top-4 right-4">
+          <Badge variant="destructive">{business.current_offer}</Badge>
+        </div>
+      )}
+      <div className="absolute bottom-4 left-4 right-4 text-white">
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="text-xl font-bold">{business.name}</h3>
+          {business.rating && (
+            <div className="flex items-center gap-1">
+              <Star className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+              <span className="text-sm">{Number(business.rating).toFixed(1)}</span>
+            </div>
+          )}
+        </div>
+        <p className="text-sm opacity-90 line-clamp-2">
+          {business.editorial_summary || business.description || "Featured business with great deals!"}
+        </p>
+      </div>
+    </Card>
+  </div>
+);
 
-  // Use the likes, comments, and follows hooks
-  const { liked, likeCount, loading: likesLoading, toggleLike } = useLikes(post.id);
-  const { commentCount } = useComments(post.id);
-  const { isFollowing, followerCount, loading: followLoading, toggleFollow } = useFollows(post.businessId);
+const OfferStrip = ({ businesses }: { businesses: Business[] }) => (
+  <div className="mb-6">
+    <div className="bg-gradient-to-r from-red-600 to-pink-600 text-white py-3 px-4">
+      <h3 className="font-bold text-center">🔥 EXCLUSIVE OFFERS</h3>
+    </div>
+    <div className="bg-gray-50 p-4">
+      <div className="flex gap-3 overflow-x-auto scrollbar-hide">
+        {businesses.filter(b => b.current_offer).slice(0, 6).map((business) => (
+          <Link key={business.id} to={`/seller/${business.name.toLowerCase().replace(/\s+/g, '-')}`}>
+            <div className="flex-shrink-0 relative">
+              <div className="w-28 h-28 bg-white rounded-lg p-3 shadow-sm flex items-center justify-center">
+                <img
+                  src={business.logo_url || "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=100&h=100&fit=crop"}
+                  alt={business.name}
+                  className="w-16 h-16 object-contain"
+                />
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 bg-red-600 text-white text-xs py-1 rounded-b-lg text-center font-bold">
+                {business.current_offer}
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </div>
+  </div>
+);
 
-  const trig = (key: keyof typeof shake) => {
-    setShake((s) => ({ ...s, [key]: true }));
-    setTimeout(() => setShake((s) => ({ ...s, [key]: false })), 380);
-  };
+const LeaderboardCard = ({ businesses }: { businesses: Business[] }) => (
+  <div className="mb-6 px-4">
+    <h3 className="text-lg font-semibold mb-3 flex items-center gap-2">
+      <Award className="w-5 h-5 text-yellow-500" />
+      Top Rated This Week
+    </h3>
+    <Card className="p-4">
+      <div className="space-y-3">
+        {businesses.slice(0, 3).map((business, index) => (
+          <Link key={business.id} to={`/seller/${business.name.toLowerCase().replace(/\s+/g, '-')}`}>
+            <div className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors">
+              <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-sm">
+                {index + 1}
+              </div>
+              <img
+                src={business.logo_url || "https://images.unsplash.com/photo-1560472354-b33ff0c44a43?w=40&h=40&fit=crop"}
+                alt={business.name}
+                className="w-10 h-10 object-contain rounded"
+              />
+              <div className="flex-1">
+                <p className="font-medium text-sm">{business.name}</p>
+                {business.rating && (
+                  <div className="flex items-center gap-1">
+                    <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                    <span className="text-xs text-muted-foreground">{Number(business.rating).toFixed(1)}</span>
+                  </div>
+                )}
+              </div>
+            </div>
+          </Link>
+        ))}
+      </div>
+    </Card>
+  </div>
+);
 
-  const handleLikeClick = async () => {
-    if (!likesLoading) {
-      await toggleLike();
-      trig('like');
-    }
-  };
+const PhotoCarouselCard = ({ businesses }: { businesses: Business[] }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
 
-  const handleCommentClick = () => {
-    setOpenComments(true);
-    trig('comment');
-  };
+  const businessPhotos = businesses
+    .filter(b => b.cover_photo_url)
+    .slice(0, 4)
+    .map(b => b.cover_photo_url!);
 
-  const onShare = async () => {
-    const shareData = { title: "LocalIt", text: `${post.store}: ${post.offer}`, url: window.location.href };
-    try {
-      if (navigator.share) {
-        await navigator.share(shareData);
-      } else {
-        await navigator.clipboard.writeText(`${shareData.text} - ${shareData.url}`);
-        toast.success("Link copied to clipboard");
-      }
-    } catch {}
-  };
+  if (businessPhotos.length === 0) return null;
 
   return (
-    <article className="relative rounded-xl overflow-hidden shadow-md bg-card animate-fade-in">
-      <div className="relative" style={{ height: 545 }}>
-        <div className={`w-full h-full ${expanded ? 'blur-[2px]' : ''}`}>
-          <PhotoCarousel photos={post.photos} onImageClick={onImageClick} />
-        </div>
-        {/* Vertical Ribbon */}
-        <div className="absolute top-0" style={{ left: '30px' }}>
-          <div className="bg-destructive text-destructive-foreground px-3 py-4 shadow-lg"
-               style={{
-                 width: '57px',
-                 height: '96px',
-                 borderBottomLeftRadius: '12px',
-                 borderBottomRightRadius: '12px',
-                 display: 'flex',
-                 alignItems: 'center',
-                 justifyContent: 'center',
-                 textAlign: 'center'
-               }}>
-            <span className="text-xs font-bold leading-tight whitespace-pre-line transform -rotate-0">{post.offer}</span>
+    <div className="mb-6 px-4">
+      <h3 className="text-lg font-semibold mb-3">Business Gallery</h3>
+      <Card className="overflow-hidden">
+        <div className="relative h-48">
+          <img
+            src={businessPhotos[currentIndex]}
+            alt={`Business ${currentIndex + 1}`}
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex gap-2">
+            {businessPhotos.map((_, index) => (
+              <button
+                key={index}
+                onClick={() => setCurrentIndex(index)}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === currentIndex ? 'bg-white' : 'bg-white/50'
+                }`}
+              />
+            ))}
           </div>
         </div>
-        {/* Action stack */}
-          <div className="absolute right-2 bottom-36 flex flex-col items-center gap-3">
-          <div className="relative">
-            <button
-              onClick={handleLikeClick}
-              disabled={likesLoading}
-              className={`h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale ${shake.like ? 'animate-shake' : ''} ${likesLoading ? 'opacity-50' : ''}`}
-              aria-label="Like"
-            >
-              <Heart size={20} className={`transition-colors ${liked ? 'text-destructive fill-destructive' : ''}`} />
-            </button>
-            {likeCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-destructive text-destructive-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {likeCount > 99 ? '99+' : likeCount}
-              </span>
-            )}
-          </div>
-          <div className="relative">
-            <button
-              onClick={handleCommentClick}
-              className={`h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale ${shake.comment ? 'animate-shake' : ''}`}
-              aria-label="Comments"
-            >
-              <MessageCircle size={20} />
-            </button>
-            {commentCount > 0 && (
-              <span className="absolute -top-1 -right-1 bg-brand text-brand-foreground text-xs rounded-full h-5 w-5 flex items-center justify-center">
-                {commentCount > 99 ? '99+' : commentCount}
-              </span>
-            )}
-          </div>
-          <button onClick={() => { onShare(); trig('share'); }} className={`h-10 w-10 rounded-full grid place-items-center bg-background/80 backdrop-blur hover-scale ${shake.share ? 'animate-shake' : ''}`} aria-label="Share">
-            <Share2 size={20} />
-          </button>
-        </div>
-        {/* Bottom glass panel */}
-        <div className={`absolute inset-x-0 bottom-0 p-3 transition-all ${expanded ? 'h-1/2' : 'h-1/4'} glass`}>
-          <div className="flex items-center gap-2">
-            <Link to={`/seller/${post.businessId}`} className="text-sm font-bold text-white flex items-center gap-1">
-              {post.store}
-            </Link>
-            <BadgeCheck className="text-white" size={16} fill="green" />
-            <Button
-              size="sm"
-              variant={isFollowing ? 'default' : 'secondary'}
-              onClick={toggleFollow}
-              disabled={followLoading}
-              className="h-6"
-            >
-              {followLoading ? 'Loading...' : (isFollowing ? 'Following' : 'Follow')}
-            </Button>
-          </div>
-          <div className="mt-3 flex gap-3 items-start">
-            <Link to={`/seller/${post.businessId}`} className="shrink-0 h-9 w-9 rounded-full bg-white grid place-items-center overflow-hidden">
-              <img src={post.logoUrl} alt={`${post.store} logo`} className="h-full w-full object-contain" />
-            </Link>
-            <button className="text-left text-white" onClick={() => setExpanded(e => !e)} aria-expanded={expanded}>
-              {/* First row - Large text */}
-              <div className="text-base leading-relaxed">
-                {post.description.substring(0, 40)}
-              </div>
-
-              {/* Remaining text - Small text */}
-              {post.description.length > 80 && (
-                <div className={`mt-1 ${expanded ? '' : 'line-clamp-2'}`}>
-                  <div className="text-xs leading-relaxed opacity-90">
-                    {expanded ? post.description.substring(40) : post.description.substring(40, 160)}
-                  </div>
-                </div>
-              )}
-
-              {post.description.length > 80 && (
-                <span className="ml-1 opacity-80 text-xs">{expanded ? ' Show less' : ' …more'}</span>
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <Comments
-        postId={post.id}
-        isOpen={openComments}
-        onClose={() => setOpenComments(false)}
-      />
-    </article>
+      </Card>
+    </div>
   );
 };
 
+const MoodBoardSection = ({ businesses }: { businesses: Business[] }) => (
+  <div className="mb-6 px-4">
+    <h3 className="text-lg font-semibold mb-3">Discover Local Gems</h3>
+    <div className="grid grid-cols-2 gap-2">
+      {businesses.slice(0, 4).map((business, index) => (
+        <Link key={business.id} to={`/seller/${business.name.toLowerCase().replace(/\s+/g, '-')}`}>
+          <div className={`relative overflow-hidden rounded-lg ${index === 0 ? 'row-span-2 h-48' : 'h-24'}`}>
+            <img
+              src={business.cover_photo_url || business.logo_url || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=300&h=200&fit=crop"}
+              alt={business.name}
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
+            <div className="absolute bottom-2 left-2 text-white">
+              <p className="font-semibold text-sm">{business.name}</p>
+              {business.rating && (
+                <div className="flex items-center gap-1 mt-1">
+                  <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                  <span className="text-xs">{Number(business.rating).toFixed(1)}</span>
+                </div>
+              )}
+            </div>
+          </div>
+        </Link>
+      ))}
+    </div>
+  </div>
+);
+
+const SplitCardLayout = ({ business }: { business: Business }) => (
+  <div className="mb-6 px-4">
+    <Card className="overflow-hidden">
+      <div className="flex">
+        <div className="w-1/2">
+          <img
+            src={business.cover_photo_url || business.logo_url || "https://images.unsplash.com/photo-1441986300917-64674bd600d8?w=200&h=150&fit=crop"}
+            alt={business.name}
+            className="w-full h-32 object-cover"
+          />
+        </div>
+        <div className="w-1/2 p-4 flex flex-col justify-center">
+          <h4 className="font-semibold text-sm mb-1">{business.name}</h4>
+          {business.rating && (
+            <div className="flex items-center gap-1 mb-2">
+              <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+              <span className="text-xs text-muted-foreground">{Number(business.rating).toFixed(1)}</span>
+            </div>
+          )}
+          <p className="text-xs text-muted-foreground line-clamp-2">
+            {business.editorial_summary || business.description || "Great local business"}
+          </p>
+          {business.current_offer && (
+            <Badge className="mt-2 text-xs bg-green-600 hover:bg-green-700">{business.current_offer}</Badge>
+          )}
+        </div>
+      </div>
+    </Card>
+  </div>
+);
+
+const CategoryDivider = ({ title, icon }: { title: string; icon: string }) => (
+  <div className="my-6 px-4">
+    <div className="flex items-center gap-2 py-3">
+      <span className="text-2xl">{icon}</span>
+      <h2 className="text-xl font-bold">{title}</h2>
+    </div>
+  </div>
+);
+
 const Home = () => {
-  useSEO({
-    title: "LocalIt Home – Best deals at Sarath City Capital Mall",
-    description: "Scroll hyperlocal deals, follow stores, like, comment and share offers around Sarath City Capital Mall.",
-    canonical: window.location.origin + "/home",
+  const [feedData, setFeedData] = useState<FeedData>({
+    topRatedBusinesses: [],
+    businessesWithOffers: [],
+    recentBusinesses: [],
+    categories: [],
+    restaurantBusinesses: [],
+    fashionBusinesses: [],
+    loading: true,
   });
 
-  const [posts, setPosts] = useState<Post[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [hasMore, setHasMore] = useState(true);
-  const [page, setPage] = useState(0);
-  const [viewerOpen, setViewerOpen] = useState(false);
-  const [startIndex, setStartIndex] = useState(0);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-  const [isSearchMode, setIsSearchMode] = useState(false);
-  const loaderRef = useRef<HTMLDivElement | null>(null);
+  useSEO({
+    title: "LocalIt - Discover Best Local Deals & Businesses",
+    description: "Explore curated local businesses, trending offers, and community reviews in your neighborhood. Your social network for local commerce.",
+    canonical: window.location.origin + "/",
+  });
 
-  // Open post viewer at specific index
-  const openViewer = (idx: number) => {
-    setStartIndex(idx);
-    setViewerOpen(true);
-  };
-
-  // Transform database post to UI post format
-  const transformPost = (dbPost: any): Post => {
-    // Handle photos array from the new schema
-    const photos = Array.isArray(dbPost.photos) ? dbPost.photos : [];
-
-    return {
-      id: dbPost.id,
-      photos: photos,
-      offer: dbPost.offer || "Special Offer",
-      store: dbPost.business_name || dbPost.business?.name,
-      description: dbPost.description || "Check out this amazing deal!",
-      logoUrl: dbPost.business_logo_url || dbPost.business?.logo_url || "https://via.placeholder.com/40x40?text=Logo",
-      businessId: dbPost.business_id
-    };
-  };
-
-  // Fetch posts from database
-  const fetchPosts = async (
-    pageNum: number = 0,
-    append: boolean = false,
-    categoryId: string = selectedCategoryId,
-    searchTerm: string = searchQuery
-  ) => {
-    try {
-      if (!append) setLoading(true);
-
-      const limit = 10;
-      const offset = pageNum * limit;
-
-      // Use search function if search term is provided
-      if (searchTerm.trim()) {
-        const categoryFilter = categoryId !== 'all' ? categoryId : null;
-
-        const { data, error } = await (supabase as any).rpc('search_posts', {
-          search_term: searchTerm,
-          category_filter: categoryFilter,
-          result_limit: limit,
-          result_offset: offset
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        // Transform search results to match Post interface
-        const transformedPosts = (data || []).map(transformPost);
-
-        if (append) {
-          setPosts(prev => [...prev, ...transformedPosts]);
-        } else {
-          setPosts(transformedPosts);
-        }
-
-        // Check if we have more posts
-        setHasMore(transformedPosts.length === limit);
-
-      } else {
-        // Regular fetch without search using the new function
-        const categoryFilter = categoryId !== 'all' ? categoryId : null;
-
-        const { data, error } = await (supabase as any).rpc('get_posts_with_photos', {
-          category_filter: categoryFilter,
-          result_limit: limit,
-          result_offset: offset
-        });
-
-        if (error) {
-          throw error;
-        }
-
-        const transformedPosts = (data || []).map(transformPost);
-
-        if (append) {
-          setPosts(prev => [...prev, ...transformedPosts]);
-        } else {
-          setPosts(transformedPosts);
-        }
-
-        // Check if we have more posts
-        setHasMore(transformedPosts.length === limit);
-      }
-
-    } catch (error) {
-      console.error('Error fetching posts:', error);
-      toast.error("Failed to load posts. Please try again.");
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Handle category selection
-  const handleCategorySelect = (categoryId: string) => {
-    setSelectedCategoryId(categoryId);
-    setPage(0);
-    setHasMore(true);
-    fetchPosts(0, false, categoryId, searchQuery);
-  };
-
-  // Handle search
-  const handleSearch = (query: string) => {
-    setSearchQuery(query);
-    setIsSearchMode(true);
-    setPage(0);
-    setHasMore(true);
-    fetchPosts(0, false, selectedCategoryId, query);
-  };
-
-  // Handle search clear
-  const handleSearchClear = () => {
-    setSearchQuery('');
-    setIsSearchMode(false);
-    setPage(0);
-    setHasMore(true);
-    fetchPosts(0, false, selectedCategoryId, '');
-  };
-
-  // Initial load
   useEffect(() => {
-    fetchPosts(0, false);
+    fetchFeedData();
   }, []);
 
-  // Infinite scroll
-  useEffect(() => {
-    const ob = new IntersectionObserver((entries) => {
-      if (entries[0].isIntersecting && hasMore && !loading) {
-        const nextPage = page + 1;
-        setPage(nextPage);
-        fetchPosts(nextPage, true, selectedCategoryId, searchQuery);
-      }
-    }, { rootMargin: '200px' });
+  const fetchFeedData = async () => {
+    try {
+      setFeedData(prev => ({ ...prev, loading: true }));
 
-    if (loaderRef.current) ob.observe(loaderRef.current);
-    return () => ob.disconnect();
-  }, [hasMore, loading, page, selectedCategoryId, searchQuery]);
+      // Fetch top rated businesses
+      const { data: topRated } = await supabase
+        .from('businesses')
+        .select('*')
+        .not('rating', 'is', null)
+        .order('rating', { ascending: false })
+        .limit(10);
 
-  // Keyboard support for viewer
-  useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape' && viewerOpen) {
-        setViewerOpen(false);
-      }
-    };
+      // Fetch businesses with offers
+      const { data: withOffers } = await supabase
+        .from('businesses')
+        .select('*')
+        .not('current_offer', 'is', null)
+        .neq('current_offer', '')
+        .limit(10);
 
-    if (viewerOpen) {
-      document.addEventListener('keydown', handleKeyDown);
-      // Prevent body scroll when viewer is open
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
+      // Fetch recent businesses
+      const { data: recent } = await supabase
+        .from('businesses')
+        .select('*')
+        .order('created_at', { ascending: false })
+        .limit(15);
+
+      // Fetch categories
+      const { data: categories } = await supabase
+        .from('categories')
+        .select('*')
+        .order('name', { ascending: true });
+
+      // Fetch restaurant businesses
+      const { data: restaurants } = await supabase
+        .from('businesses')
+        .select('*')
+        .or('primary_type.eq.restaurant,primary_type.eq.indian_restaurant,primary_type.eq.buffet_restaurant')
+        .not('rating', 'is', null)
+        .order('rating', { ascending: false })
+        .limit(8);
+
+      // Fetch fashion/clothing businesses
+      const { data: fashion } = await supabase
+        .from('businesses')
+        .select('*')
+        .or('primary_type.eq.clothing_store,primary_type.eq.shoe_store')
+        .limit(8);
+
+      setFeedData({
+        topRatedBusinesses: topRated || [],
+        businessesWithOffers: withOffers || [],
+        recentBusinesses: recent || [],
+        categories: categories || [],
+        restaurantBusinesses: restaurants || [],
+        fashionBusinesses: fashion || [],
+        loading: false,
+      });
+    } catch (error) {
+      console.error('Error fetching feed data:', error);
+      setFeedData(prev => ({ ...prev, loading: false }));
     }
+  };
 
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-      document.body.style.overflow = 'unset';
-    };
-  }, [viewerOpen]);
+  if (feedData.loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading amazing local deals...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Dynamic form factors based on available data
+  const formFactors = [
+    // Hero banner with top business
+    feedData.topRatedBusinesses.length > 0 && {
+      type: "hero",
+      component: <HeroBanner business={feedData.topRatedBusinesses[0]} />
+    },
+
+    // Trending businesses horizontal scroll
+    feedData.recentBusinesses.length > 0 && {
+      type: "stories",
+      component: <HorizontalScrollCards businesses={feedData.recentBusinesses} />
+    },
+
+    // Category grid
+    feedData.categories.length > 0 && {
+      type: "grid",
+      component: <GridTileSection categories={feedData.categories} />
+    },
+
+    // Offers strip
+    feedData.businessesWithOffers.length > 0 && {
+      type: "offers",
+      component: <OfferStrip businesses={feedData.businessesWithOffers} />
+    },
+
+    // Food & Drinks divider
+    feedData.restaurantBusinesses.length > 0 && {
+      type: "divider",
+      component: <CategoryDivider title="Food & Drinks" icon="🍕" />
+    },
+
+    // Featured restaurant
+    feedData.restaurantBusinesses.length > 0 && {
+      type: "featured",
+      component: <BigFeaturedCard business={feedData.restaurantBusinesses[0]} />
+    },
+
+    // Top rated leaderboard
+    feedData.topRatedBusinesses.length > 0 && {
+      type: "leaderboard",
+      component: <LeaderboardCard businesses={feedData.topRatedBusinesses} />
+    },
+
+    // Photo carousel
+    feedData.recentBusinesses.length > 0 && {
+      type: "carousel",
+      component: <PhotoCarouselCard businesses={feedData.recentBusinesses} />
+    },
+
+    // Fashion divider
+    feedData.fashionBusinesses.length > 0 && {
+      type: "divider2",
+      component: <CategoryDivider title="Fashion & Style" icon="👕" />
+    },
+
+    // Mood board section
+    feedData.recentBusinesses.length > 0 && {
+      type: "moodboard",
+      component: <MoodBoardSection businesses={feedData.recentBusinesses} />
+    },
+
+    // Split card layout
+    feedData.topRatedBusinesses.length > 1 && {
+      type: "split",
+      component: <SplitCardLayout business={feedData.topRatedBusinesses[1]} />
+    },
+  ].filter(Boolean);
 
   return (
-    <main className="pb-24 max-w-md mx-auto">
-      <header className="px-8 pt-4">
-        <p className="text-xs text-muted-foreground">Here are the best deals at</p>
-        <h1 className="text-base font-semibold flex items-center gap-1"><MapPin size={16} className="text-brand" /> Sarath City Capital Mall</h1>
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="sticky top-0 z-40 bg-background/80 backdrop-blur border-b">
+        <div className="p-4">
+          <div className="text-center mb-4">
+            <p className="text-sm text-muted-foreground">Discover the best local deals at</p>
+            <div className="flex items-center justify-center gap-1">
+              <MapPin className="w-4 h-4 text-primary" />
+              <p className="font-medium">Sarath City Capital Mall</p>
+            </div>
+          </div>
+
+          <RotatingSearch />
+
+          <div className="mt-4">
+            <CategoryMenu
+              selectedCategoryId="all"
+            />
+          </div>
+        </div>
       </header>
 
-      <section className="px-8 mt-3">
-        <RotatingSearch
-          onSearch={handleSearch}
-          onClear={handleSearchClear}
-          searchQuery={searchQuery}
-          enableAutoSearch={true}
-        />
-      </section>
-
-      <section className="mt-4 px-8">
-        <CategoryMenu
-          selectedCategoryId={selectedCategoryId}
-          onCategorySelect={handleCategorySelect}
-        />
-      </section>
-
-      {isSearchMode && searchQuery && (
-        <section className="px-8 mt-2">
-          <div className="text-sm text-muted-foreground">
-            Search results for "<span className="font-medium text-foreground">{searchQuery}</span>"
-            {selectedCategoryId !== 'all' && (
-              <span> in selected category</span>
-            )}
-          </div>
-        </section>
-      )}
-
-      <section className="mt-2 px-8 space-y-4">
-        {loading && posts.length === 0 ? (
-          // Initial loading skeleton
-          [...Array(3)].map((_, index) => (
-            <div key={index} className="relative rounded-xl overflow-hidden shadow-md bg-card animate-pulse">
-              <div className="relative" style={{ height: 545 }}>
-                <div className="w-full h-full bg-muted" />
-                <div className="absolute top-0" style={{ left: '30px' }}>
-                  <div className="bg-muted rounded-b-xl" style={{ width: '57px', height: '96px' }} />
-                </div>
-                <div className="absolute inset-x-0 bottom-0 p-3 h-1/4 bg-gradient-to-t from-black/50 to-transparent">
-                  <div className="flex items-center justify-between">
-                    <div className="h-4 w-24 bg-muted rounded" />
-                    <div className="h-8 w-16 bg-muted rounded" />
-                  </div>
-                  <div className="mt-3 flex gap-3 items-start">
-                    <div className="h-9 w-9 bg-muted rounded-full" />
-                    <div className="space-y-2 flex-1">
-                      <div className="h-3 w-full bg-muted rounded" />
-                      <div className="h-3 w-3/4 bg-muted rounded" />
-                    </div>
-                  </div>
-                </div>
-              </div>
+      {/* Main Content */}
+      <main className="pb-20">
+        {formFactors.length > 0 ? (
+          formFactors.map((item: any, index) => (
+            <div key={`${item.type}-${index}`} className="animate-fade-in">
+              {item.component}
             </div>
           ))
-        ) : posts.length === 0 ? (
-          // No posts state
-          <div className="text-center py-12">
-            <div className="text-6xl mb-4">📱</div>
-            <h3 className="text-lg font-semibold mb-2">No posts yet</h3>
-            <p className="text-muted-foreground">
-              Be the first to discover amazing deals when businesses start posting!
-            </p>
-          </div>
         ) : (
-          // Posts list
-          posts.map((p, index) => (
-            <FeedPost
-              key={p.id}
-              post={p}
-              onImageClick={() => openViewer(index)}
-            />
-          ))
-        )}
-
-        {/* Infinite scroll loader */}
-        {hasMore && posts.length > 0 && (
-          <div ref={loaderRef} className="h-12 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+          <div className="flex items-center justify-center py-20">
+            <div className="text-center">
+              <Sparkles className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">No businesses found. Check back soon!</p>
+            </div>
           </div>
         )}
+      </main>
 
-        {!hasMore && posts.length > 0 && (
-          <div className="text-center py-8 text-muted-foreground">
-            <p>You've seen all the latest deals! 🎉</p>
-          </div>
-        )}
-      </section>
-
-      {/* Full-screen post viewer */}
-      {viewerOpen && posts.length > 0 && (
-        <div className="fixed inset-0 bg-black/90 z-50 overflow-y-auto snap-y snap-mandatory">
-          {posts.slice(startIndex).concat(posts.slice(0, startIndex)).map((post, i) => (
-            <SearchResultPost
-              key={`viewer-${post.id}-${i}`}
-              post={post}
-              onShare={async () => {
-                const shareData = { title: "LocalIt", text: `${post.store}: ${post.offer}`, url: window.location.href };
-                try {
-                  if (navigator.share) {
-                    await navigator.share(shareData);
-                  } else {
-                    await navigator.clipboard.writeText(`${shareData.text} - ${shareData.url}`);
-                    toast.success("Link copied to clipboard");
-                  }
-                } catch {}
-              }}
-            />
-          ))}
-          <button
-            onClick={() => setViewerOpen(false)}
-            className="fixed top-4 right-4 bg-background text-foreground rounded-full h-9 px-3 text-sm z-10"
-          >
-            Close
-          </button>
-        </div>
-      )}
-
-      <BottomNav active="home" />
-    </main>
+      <BottomNav />
+    </div>
   );
 };
 
