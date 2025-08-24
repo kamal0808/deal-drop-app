@@ -30,6 +30,7 @@ export default function Feed() {
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
   const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [loadedVideos, setLoadedVideos] = useState<Set<number>>(new Set([0])); // Track which videos are loaded
+  const [preloadedVideos, setPreloadedVideos] = useState<Set<number>>(new Set()); // Track which videos are preloaded
   const [processingVideoId, setProcessingVideoId] = useState<string | null>(null); // Track which video is being processed for AI
   const [youTubeAPIReady, setYouTubeAPIReady] = useState(false);
   const navigate = useNavigate();
@@ -37,6 +38,9 @@ export default function Feed() {
   const containerRef = useRef<HTMLDivElement>(null);
   const playersRef = useRef<Record<number, any>>({});
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const lastScrollTop = useRef<number>(0);
+  const scrollDirection = useRef<'up' | 'down' | null>(null);
+  const isScrolling = useRef<boolean>(false);
 
   useSEO({
     title: "Feed – LocalIt",
@@ -61,8 +65,8 @@ export default function Feed() {
     }
   }, []);
 
-  // Create YouTube player
-  const createPlayer = (index: number, videoId: string) => {
+  // Create YouTube player with preloading support
+  const createPlayer = (index: number, videoId: string, isPreload: boolean = false) => {
     if (!youTubeAPIReady || !window.YT || playersRef.current[index]) return;
 
     const playerId = `player-${index}`;
@@ -76,7 +80,7 @@ export default function Feed() {
         width: '100%',
         videoId: videoId,
         playerVars: {
-          autoplay: index === 0 ? 1 : 0,
+          autoplay: isPreload ? 0 : (index === 0 ? 1 : 0), // Don't autoplay preloaded videos
           mute: 1,
           controls: 0,
           showinfo: 0,
@@ -90,8 +94,13 @@ export default function Feed() {
         },
         events: {
           onReady: (event: any) => {
-            console.log(`🎬 Player ${index} ready`);
-            if (index === 0) {
+            console.log(`🎬 Player ${index} ready ${isPreload ? '(preloaded)' : ''}`);
+
+            if (isPreload) {
+              // For preloaded videos, pause immediately and mark as preloaded
+              event.target.pauseVideo();
+              setPreloadedVideos(prev => new Set([...prev, index]));
+            } else if (index === 0) {
               // Only auto-unmute first video if user hasn't explicitly chosen muted experience
               if (!userMutePreference) {
                 setTimeout(() => {
@@ -117,6 +126,85 @@ export default function Feed() {
     }
   };
 
+  // Convert preloaded video to active video
+  const activatePreloadedVideo = (index: number) => {
+    const player = playersRef.current[index];
+    if (player && preloadedVideos.has(index)) {
+      try {
+        // Seek to beginning and mark as no longer preloaded
+        player.seekTo(0);
+        setPreloadedVideos(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(index);
+          return newSet;
+        });
+        console.log(`🎬 Activated preloaded video ${index}`);
+      } catch (error) {
+        console.error(`Error activating preloaded video ${index}:`, error);
+      }
+    }
+  };
+
+  // Predictively start the next video during scroll
+  const startNextVideoPreemptively = (targetIndex: number) => {
+    if (targetIndex < 0 || targetIndex >= videos.length) return;
+
+    console.log(`🎬 Preemptively starting video ${targetIndex}`);
+
+    // Ensure the video is loaded immediately
+    setLoadedVideos(prev => new Set([...prev, targetIndex]));
+
+    // Try to start immediately if player exists, otherwise wait briefly
+    const tryStartVideo = (attempt = 0) => {
+      const player = playersRef.current[targetIndex];
+      if (player && player.playVideo) {
+        // If it was preloaded, activate it first
+        if (preloadedVideos.has(targetIndex)) {
+          activatePreloadedVideo(targetIndex);
+        }
+
+        // Start playing the video
+        player.playVideo();
+
+        // Apply mute preference immediately
+        if (userMutePreference && player.mute) {
+          player.mute();
+        } else if (!userMutePreference && player.unMute) {
+          player.unMute();
+        }
+
+        console.log(`🎬 Started video ${targetIndex} preemptively (attempt ${attempt + 1})`);
+      } else if (attempt < 5) {
+        // Retry up to 5 times with increasing delays
+        setTimeout(() => tryStartVideo(attempt + 1), 50 * (attempt + 1));
+      }
+    };
+
+    tryStartVideo();
+  };
+
+  // Preload next videos for smooth scrolling
+  const preloadNextVideos = (currentIndex: number, count: number = 5) => {
+    const videosToPreload: number[] = [];
+    for (let i = 1; i <= count; i++) {
+      const nextIndex = currentIndex + i;
+      if (nextIndex < videos.length && !loadedVideos.has(nextIndex) && !preloadedVideos.has(nextIndex)) {
+        videosToPreload.push(nextIndex);
+      }
+    }
+
+    if (videosToPreload.length > 0) {
+      console.log(`🎬 Preloading ${videosToPreload.length} videos ahead of index ${currentIndex}:`, videosToPreload);
+    }
+
+    // Preload videos with a small delay between each to avoid overwhelming the browser
+    videosToPreload.forEach((index, i) => {
+      setTimeout(() => {
+        setLoadedVideos(prev => new Set([...prev, index]));
+      }, i * 500); // 500ms delay between each preload
+    });
+  };
+
   const loadVideos = async (regionId?: string | null) => {
     setLoading(true);
     try {
@@ -124,6 +212,7 @@ export default function Feed() {
       setVideos(feedVideos);
       setCurrentVideoIndex(0); // Reset to first video
       setLoadedVideos(new Set([0])); // Only load first video initially
+      setPreloadedVideos(new Set()); // Reset preloaded videos
 
       // Initialize video states - only first video playing
       const initialPlayingStates: Record<number, boolean> = {};
@@ -143,12 +232,10 @@ export default function Feed() {
       });
       playersRef.current = {};
 
-      // Preload the second video for smooth scrolling
-      if (feedVideos.length > 1) {
-        setTimeout(() => {
-          setLoadedVideos(prev => new Set([...prev, 1]));
-        }, 2000); // Load second video after 2 seconds
-      }
+      // Start preloading next videos after first video is ready
+      setTimeout(() => {
+        preloadNextVideos(0, 5);
+      }, 2000); // Wait 2 seconds for first video to load, then start preloading
     } catch (error) {
       console.error('Error loading feed videos:', error);
       toast.error('Failed to load videos');
@@ -161,16 +248,60 @@ export default function Feed() {
     loadVideos(selectedRegionId);
   }, [selectedRegionId]);
 
+  // Add scroll start detection for even more predictive loading
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    let scrollStartTimeout: NodeJS.Timeout;
+
+    const handleScrollStart = () => {
+      clearTimeout(scrollStartTimeout);
+      isScrolling.current = true;
+
+      // Prepare next videos as soon as scroll starts
+      const currentScrollTop = container.scrollTop;
+      const containerHeight = container.clientHeight;
+      const currentIndex = Math.round(currentScrollTop / containerHeight);
+
+      // Preload adjacent videos immediately when scroll starts
+      [currentIndex - 1, currentIndex, currentIndex + 1].forEach(index => {
+        if (index >= 0 && index < videos.length && !loadedVideos.has(index)) {
+          setLoadedVideos(prev => new Set([...prev, index]));
+        }
+      });
+    };
+
+    const handleScrollEnd = () => {
+      scrollStartTimeout = setTimeout(() => {
+        isScrolling.current = false;
+      }, 150);
+    };
+
+    container.addEventListener('touchstart', handleScrollStart, { passive: true });
+    container.addEventListener('touchend', handleScrollEnd, { passive: true });
+    container.addEventListener('scroll', handleScrollEnd, { passive: true });
+
+    return () => {
+      container.removeEventListener('touchstart', handleScrollStart);
+      container.removeEventListener('touchend', handleScrollEnd);
+      container.removeEventListener('scroll', handleScrollEnd);
+      clearTimeout(scrollStartTimeout);
+    };
+  }, [videos.length, loadedVideos]);
+
   // Create players when API is ready and videos are loaded
   useEffect(() => {
     if (youTubeAPIReady && videos.length > 0) {
       loadedVideos.forEach(index => {
         if (index < videos.length && !playersRef.current[index]) {
-          setTimeout(() => createPlayer(index, videos[index].id), 100 * index);
+          // Determine if this is a preload (not the current video or immediately adjacent)
+          const isPreload = Math.abs(index - currentVideoIndex) > 1 && !isScrolling.current;
+          setTimeout(() => createPlayer(index, videos[index].id, isPreload), 50 * index); // Reduced delay for faster loading
         }
       });
     }
-  }, [youTubeAPIReady, videos, loadedVideos]);
+  }, [youTubeAPIReady, videos, loadedVideos, currentVideoIndex]);
 
   // Cleanup timeout and players on unmount
   useEffect(() => {
@@ -193,6 +324,39 @@ export default function Feed() {
     const container = containerRef.current;
     const scrollTop = container.scrollTop;
     const containerHeight = container.clientHeight;
+
+    // Detect scroll direction
+    const currentScrollDirection = scrollTop > lastScrollTop.current ? 'down' : 'up';
+    const scrollDelta = Math.abs(scrollTop - lastScrollTop.current);
+
+    // Only process if there's significant scroll movement
+    if (scrollDelta > 10) {
+      scrollDirection.current = currentScrollDirection;
+      isScrolling.current = true;
+
+      // Calculate current video index based on scroll position
+      const currentScrollVideoIndex = Math.round(scrollTop / containerHeight);
+
+      // Predict next video based on scroll direction
+      let predictedNextIndex = currentScrollVideoIndex;
+      if (currentScrollDirection === 'down') {
+        predictedNextIndex = currentScrollVideoIndex + 1;
+      } else if (currentScrollDirection === 'up') {
+        predictedNextIndex = currentScrollVideoIndex - 1;
+      }
+
+      // Start the predicted next video if we're scrolling significantly and it's different from current
+      if (predictedNextIndex !== currentVideoIndex &&
+          predictedNextIndex >= 0 &&
+          predictedNextIndex < videos.length &&
+          scrollDelta > containerHeight * 0.1) { // Only if scrolled more than 10% of screen height
+
+        console.log(`🎬 Scroll detected: ${currentScrollDirection}, starting video ${predictedNextIndex} preemptively`);
+        startNextVideoPreemptively(predictedNextIndex);
+      }
+    }
+
+    lastScrollTop.current = scrollTop;
 
     // Preload videos that are close to being viewed
     const scrollVideoIndex = Math.round(scrollTop / containerHeight);
@@ -223,6 +387,8 @@ export default function Feed() {
     scrollTimeoutRef.current = setTimeout(() => {
       if (!containerRef.current) return;
 
+      isScrolling.current = false;
+
       const container = containerRef.current;
       const scrollTop = container.scrollTop;
       const containerHeight = container.clientHeight;
@@ -239,31 +405,28 @@ export default function Feed() {
 
         setCurrentVideoIndex(videoIndex);
 
-        // Load current video and next video (for smooth scrolling)
-        setLoadedVideos(prev => {
-          const newLoaded = new Set(prev);
-          newLoaded.add(videoIndex); // Current video
-          if (videoIndex + 1 < videos.length) {
-            newLoaded.add(videoIndex + 1); // Next video
-          }
-          return newLoaded;
-        });
-
-        // Start the current video
+        // Ensure current video is playing (it might already be from preemptive start)
         const currentPlayer = playersRef.current[videoIndex];
-        if (currentPlayer && currentPlayer.playVideo) {
-          currentPlayer.playVideo();
+        if (currentPlayer) {
+          // If this was a preloaded video, make sure it's fully activated
+          if (preloadedVideos.has(videoIndex)) {
+            activatePreloadedVideo(videoIndex);
+          }
 
-          // Only auto-unmute if user hasn't explicitly chosen to keep videos muted
+          // Ensure it's playing
+          if (currentPlayer.playVideo) {
+            currentPlayer.playVideo();
+          }
+
+          // Apply mute preference
           if (!userMutePreference) {
             setTimeout(() => {
               if (currentPlayer.unMute) {
                 currentPlayer.unMute();
                 setMutedStates(prev => ({ ...prev, [videoIndex]: false }));
               }
-            }, 500);
+            }, 200);
           } else {
-            // If user prefers muted, ensure this video is muted
             setTimeout(() => {
               if (currentPlayer.mute) {
                 currentPlayer.mute();
@@ -272,6 +435,11 @@ export default function Feed() {
             }, 100);
           }
         }
+
+        // Preload next batch of videos when user scrolls to a new video
+        setTimeout(() => {
+          preloadNextVideos(videoIndex, 5);
+        }, 500);
 
         // Update playing states
         setPlayingStates(prev => {
@@ -529,10 +697,19 @@ export default function Feed() {
           >
             {/* YouTube Player - only load if in loadedVideos set */}
             {loadedVideos.has(index) ? (
-              <div
-                id={`player-${index}`}
-                className="w-full h-full pointer-events-none"
-              />
+              <div className="w-full h-full relative">
+                <div
+                  id={`player-${index}`}
+                  className="w-full h-full pointer-events-none"
+                />
+                {/* Preloading indicator */}
+                {preloadedVideos.has(index) && (
+                  <div className="absolute top-4 right-4 bg-black/50 backdrop-blur-sm rounded-full px-3 py-1 text-white/80 text-xs flex items-center gap-1">
+                    <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                    Preloaded
+                  </div>
+                )}
+              </div>
             ) : (
               // Placeholder for unloaded videos
               <div className="w-full h-full bg-gray-900 flex items-center justify-center">
