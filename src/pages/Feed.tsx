@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Heart, MessageCircle, Share2, Play, Pause, Volume2, VolumeX, Sparkles, Loader2 } from "lucide-react";
+import { Heart, MessageCircle, Share2, Play, Pause, Volume2, VolumeX, Sparkles, Loader2, Grid3x3 } from "lucide-react";
 
 // YouTube IFrame API types
 declare global {
@@ -11,6 +11,7 @@ declare global {
 import { useSEO } from "@/hooks/useSEO";
 import BottomNav from "@/components/BottomNav";
 import RegionSelector from "@/components/RegionSelector";
+import VerticalCategoryMenu from "@/components/VerticalCategoryMenu";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import { useNavigate } from "react-router-dom";
@@ -24,7 +25,10 @@ export default function Feed() {
   const [loading, setLoading] = useState(true);
   const [playingStates, setPlayingStates] = useState<Record<number, boolean>>({});
   const [mutedStates, setMutedStates] = useState<Record<number, boolean>>({});
+  const [userMutePreference, setUserMutePreference] = useState<boolean>(false); // Track if user explicitly wants videos muted
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
+  const [showCategoryMenu, setShowCategoryMenu] = useState(false);
   const [loadedVideos, setLoadedVideos] = useState<Set<number>>(new Set([0])); // Track which videos are loaded
   const [processingVideoId, setProcessingVideoId] = useState<string | null>(null); // Track which video is being processed for AI
   const [youTubeAPIReady, setYouTubeAPIReady] = useState(false);
@@ -88,11 +92,13 @@ export default function Feed() {
           onReady: (event: any) => {
             console.log(`🎬 Player ${index} ready`);
             if (index === 0) {
-              // Auto-unmute first video after a short delay
-              setTimeout(() => {
-                event.target.unMute();
-                setMutedStates(prev => ({ ...prev, 0: false }));
-              }, 1000);
+              // Only auto-unmute first video if user hasn't explicitly chosen muted experience
+              if (!userMutePreference) {
+                setTimeout(() => {
+                  event.target.unMute();
+                  setMutedStates(prev => ({ ...prev, 0: false }));
+                }, 1000);
+              }
             }
           },
           onStateChange: (event: any) => {
@@ -248,13 +254,23 @@ export default function Feed() {
         if (currentPlayer && currentPlayer.playVideo) {
           currentPlayer.playVideo();
 
-          // Auto-unmute after a short delay for better UX
-          setTimeout(() => {
-            if (currentPlayer.unMute) {
-              currentPlayer.unMute();
-              setMutedStates(prev => ({ ...prev, [videoIndex]: false }));
-            }
-          }, 500);
+          // Only auto-unmute if user hasn't explicitly chosen to keep videos muted
+          if (!userMutePreference) {
+            setTimeout(() => {
+              if (currentPlayer.unMute) {
+                currentPlayer.unMute();
+                setMutedStates(prev => ({ ...prev, [videoIndex]: false }));
+              }
+            }, 500);
+          } else {
+            // If user prefers muted, ensure this video is muted
+            setTimeout(() => {
+              if (currentPlayer.mute) {
+                currentPlayer.mute();
+                setMutedStates(prev => ({ ...prev, [videoIndex]: true }));
+              }
+            }, 100);
+          }
         }
 
         // Update playing states
@@ -293,10 +309,16 @@ export default function Feed() {
     if (!player) return;
 
     const newMutedState = !mutedStates[index];
+
+    // Update individual video mute state
     setMutedStates(prev => ({
       ...prev,
       [index]: newMutedState
     }));
+
+    // Update global user preference - if user mutes any video, they want muted experience
+    // If user unmutes any video, they want unmuted experience
+    setUserMutePreference(newMutedState);
 
     if (newMutedState) {
       player.mute();
@@ -416,16 +438,25 @@ export default function Feed() {
     }
   };
 
+  const handleCategorySelect = (categoryId: string) => {
+    setSelectedCategoryId(categoryId);
+    setShowCategoryMenu(false); // Close menu after selection
+    // TODO: Filter videos by category
+    console.log('Selected category:', categoryId);
+  };
+
   if (loading) {
     return (
       <main className="h-screen flex items-center justify-center bg-black relative">
         {/* Region Selector - Top Left (even during loading) */}
-        <div className="absolute top-4 left-4 z-[60]">
+        <div className="absolute top-4 left-4 z-[160]">
           <RegionSelector
             selectedRegionId={selectedRegionId}
             onRegionChange={handleRegionChange}
           />
         </div>
+
+
 
         <div className="text-white text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-4"></div>
@@ -439,12 +470,14 @@ export default function Feed() {
     return (
       <main className="h-screen flex items-center justify-center bg-black relative">
         {/* Region Selector - Top Left */}
-        <div className="absolute top-4 left-4 z-[60]">
+        <div className="absolute top-4 left-4 z-[160]">
           <RegionSelector
             selectedRegionId={selectedRegionId}
             onRegionChange={handleRegionChange}
           />
         </div>
+
+
 
         <div className="text-white text-center">
           <p className="text-lg mb-2">No videos found</p>
@@ -463,12 +496,14 @@ export default function Feed() {
   return (
     <main className="h-screen bg-black relative overflow-hidden">
       {/* Region Selector - Top Left */}
-      <div className="absolute top-4 left-4 z-[60]">
+      <div className="absolute top-4 left-4 z-[160]">
         <RegionSelector
           selectedRegionId={selectedRegionId}
           onRegionChange={handleRegionChange}
         />
       </div>
+
+
 
       {/* Video container with snap scrolling */}
       <div
@@ -575,6 +610,20 @@ export default function Feed() {
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
+                    setShowCategoryMenu(!showCategoryMenu);
+                  }}
+                  title="Browse categories"
+                >
+                  <Grid3x3 className="h-6 w-6" />
+                </Button>
+
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-[110] pointer-events-auto"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
                     handleLike(video.id);
                   }}
                 >
@@ -633,12 +682,17 @@ export default function Feed() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-[105] pointer-events-auto"
+                  className={`h-10 w-10 rounded-full backdrop-blur-sm text-white hover:bg-white/30 relative z-[105] pointer-events-auto ${
+                    userMutePreference
+                      ? 'bg-red-500/80 hover:bg-red-500/90' // Red background when user has chosen muted experience
+                      : 'bg-white/20'
+                  }`}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
                     toggleMute(index);
                   }}
+                  title={userMutePreference ? "All videos muted by user preference" : "Toggle mute for this video"}
                 >
                   {mutedStates[index] ? (
                     <VolumeX className="h-5 w-5" />
@@ -652,7 +706,13 @@ export default function Feed() {
         ))}
       </div>
 
-
+      {/* Vertical Category Menu */}
+      <VerticalCategoryMenu
+        selectedCategoryId={selectedCategoryId}
+        onCategorySelect={handleCategorySelect}
+        onClose={() => setShowCategoryMenu(false)}
+        isOpen={showCategoryMenu}
+      />
 
       <BottomNav active="feed" />
     </main>

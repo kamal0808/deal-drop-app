@@ -69,7 +69,7 @@ export default function RegionSelector({ selectedRegionId, onRegionChange }: Reg
       </DropdownMenuTrigger>
       <DropdownMenuContent
         align="start"
-        className="w-64 max-h-80 overflow-y-auto bg-black/90 backdrop-blur-sm border-white/20 z-[70]"
+        className="w-64 max-h-80 overflow-y-auto bg-black/90 backdrop-blur-sm border-white/20 z-[160]"
       >
         <DropdownMenuItem
           onClick={() => onRegionChange(null)}
