@@ -7,7 +7,7 @@ import { BadgeCheck, MapPin, Phone, MessageCircle, Navigation, Heart, MessageSqu
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
 import { toast } from "sonner";
-import { generateBusinessSlug, formatPhoneForLink } from "@/lib/utils";
+import { formatPhoneForLink } from "@/lib/utils";
 import { useFollows } from "@/hooks/useFollows";
 import { SearchResultPost } from "@/components/SearchResultPost";
 
@@ -51,7 +51,7 @@ const formatOpeningHours = (openingHours: any): string => {
 };
 
 export default function Seller() {
-  const { sellername } = useParams();
+  const { businessId } = useParams();
   const navigate = useNavigate();
 
   const [business, setBusiness] = useState<BusinessWithPosts | null>(null);
@@ -64,39 +64,41 @@ export default function Seller() {
 
 
 
-  // Fetch business data by slug
+  // Fetch business data by ID
   const fetchBusinessData = async () => {
-    if (!sellername) return;
+    if (!businessId) return;
 
     try {
       setLoading(true);
 
-      // First, get all businesses and find the one with matching slug
-      const { data: businesses, error: businessError } = await supabase
+      // Fetch business by ID directly
+      const { data: business, error: businessError } = await supabase
         .from('businesses')
-        .select('*');
+        .select('*')
+        .eq('id', businessId)
+        .single();
 
       if (businessError) throw businessError;
 
-      // Find business by slug
-      const matchingBusiness = businesses?.find(b => generateBusinessSlug(b.name) === sellername);
-
-      if (!matchingBusiness) {
+      if (!business) {
         throw new Error('Business not found');
       }
 
-      // Fetch posts for this business
-      const { data: posts, error: postsError } = await supabase
-        .from('posts')
-        .select('*')
-        .eq('business_id', matchingBusiness.id)
-        .order('created_at', { ascending: false });
+      // Fetch posts for this business using the new function
+      const { data: posts, error: postsError } = await (supabase as any).rpc('get_posts_with_photos', {
+        category_filter: null,
+        result_limit: 50,
+        result_offset: 0
+      });
 
       if (postsError) throw postsError;
 
+      // Filter posts for this specific business
+      const businessPosts = (posts || []).filter((post: any) => post.business_id === businessId);
+
       setBusiness({
-        ...matchingBusiness,
-        posts: posts || []
+        ...business,
+        posts: businessPosts
       });
 
     } catch (error) {
@@ -109,13 +111,13 @@ export default function Seller() {
 
   useEffect(() => {
     fetchBusinessData();
-  }, [sellername]);
+  }, [businessId]);
 
   // SEO setup
   useSEO({
     title: business ? `${business.name} – LocalIt Outlet` : 'Business – LocalIt Outlet',
     description: business ? `Discover deals, posts and contact details for ${business.name}.` : 'Discover local business deals and offers.',
-    canonical: window.location.origin + `/seller/${sellername}`,
+    canonical: window.location.origin + `/seller/${businessId}`,
   });
 
   const openViewer = (idx: number) => { setStartIndex(idx); setViewerOpen(true); };
@@ -401,7 +403,7 @@ export default function Seller() {
                   className={`relative overflow-hidden rounded-md bg-card ${span}`}
                 >
                   <img
-                    src={post.photo_url}
+                    src={Array.isArray(post.photos) && post.photos.length > 0 ? post.photos[0].photo_url : "https://via.placeholder.com/200x200?text=No+Image"}
                     alt={post.description || `Post ${idx+1}`}
                     className="absolute inset-0 w-full h-full object-cover"
                     loading="lazy"
@@ -432,12 +434,11 @@ export default function Seller() {
             // Transform the post data to match SearchResultPost expected format
             const transformedPost = {
               id: post.id,
-              image: post.photo_url,
+              photos: Array.isArray(post.photos) ? post.photos : [],
               offer: post.offer || '',
               store: business.name,
               description: post.description || post.offer || "Check out this amazing deal!",
               logoUrl: business.logo_url || "https://via.placeholder.com/32x32?text=Logo",
-              sellerSlug: generateBusinessSlug(business.name),
               businessId: business.id,
             };
 

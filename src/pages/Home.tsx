@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MapPin, Heart, MessageCircle, Share2, BadgeCheck } from "lucide-react";
+import { MapPin, Heart, MessageCircle, Share2, BadgeCheck, ChevronLeft, ChevronRight, Play, Pause } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import BottomNav from "@/components/BottomNav";
 import CategoryMenu from "@/components/CategoryMenu";
@@ -11,7 +11,7 @@ import { toast } from "sonner";
 import { Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
-import { generateBusinessSlug } from "@/lib/utils";
+
 import { useLikes } from "@/hooks/useLikes";
 import { useComments } from "@/hooks/useComments";
 import { useFollows } from "@/hooks/useFollows";
@@ -25,19 +25,224 @@ type PostWithBusiness = DatabasePost & {
   business: DatabaseBusiness;
 };
 
+// Photo type for individual photos
+type Photo = {
+  id: string;
+  photo_url: string;
+  width_px?: number;
+  height_px?: number;
+  display_order: number;
+};
+
 // UI Post type for the feed
 type Post = {
   id: string;
-  image: string;
+  photos: Photo[];
   offer: string;
   store: string;
   description: string;
   logoUrl: string;
-  sellerSlug: string;
   businessId: string;
 };
 
+// Photo Carousel Component for multiple photos
+const PhotoCarousel = ({ photos, onImageClick }: { photos: Photo[]; onImageClick?: () => void }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
+  const [isAutoPlaying, setIsAutoPlaying] = useState(true);
+  const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Minimum swipe distance (in px)
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+
+    if (isLeftSwipe && currentIndex < photos.length - 1) {
+      setCurrentIndex(currentIndex + 1);
+    }
+    if (isRightSwipe && currentIndex > 0) {
+      setCurrentIndex(currentIndex - 1);
+    }
+  };
+
+  const goToPrevious = () => {
+    setCurrentIndex(currentIndex > 0 ? currentIndex - 1 : photos.length - 1);
+  };
+
+  const goToNext = () => {
+    setCurrentIndex(currentIndex < photos.length - 1 ? currentIndex + 1 : 0);
+  };
+
+  // Auto-swiping functionality
+  const startAutoPlay = () => {
+    if (photos.length > 1 && isAutoPlaying) {
+      intervalRef.current = setInterval(() => {
+        setCurrentIndex(prev => prev < photos.length - 1 ? prev + 1 : 0);
+      }, 2000); // Auto-swipe every 2 seconds
+    }
+  };
+
+  const stopAutoPlay = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+      intervalRef.current = null;
+    }
+  };
+
+  // Intersection Observer to detect when carousel is in view
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setIsAutoPlaying(true);
+            startAutoPlay();
+          } else {
+            setIsAutoPlaying(false);
+            stopAutoPlay();
+          }
+        });
+      },
+      { threshold: 0.5 } // Start auto-play when 50% of the carousel is visible
+    );
+
+    if (carouselRef.current) {
+      observer.observe(carouselRef.current);
+    }
+
+    return () => {
+      observer.disconnect();
+      stopAutoPlay();
+    };
+  }, [photos.length, isAutoPlaying]);
+
+  // Stop auto-play on user interaction
+  const handleUserInteraction = () => {
+    setIsAutoPlaying(false);
+    stopAutoPlay();
+  };
+
+  if (photos.length === 0) {
+    return (
+      <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+        <span className="text-gray-500">No image available</span>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      ref={carouselRef}
+      className="relative w-full h-full"
+      onMouseEnter={() => {
+        if (isAutoPlaying) stopAutoPlay();
+      }}
+      onMouseLeave={() => {
+        if (isAutoPlaying) startAutoPlay();
+      }}
+    >
+      <img
+        src={photos[currentIndex].photo_url}
+        alt={`Photo ${currentIndex + 1} of ${photos.length}`}
+        className="w-full h-full object-cover cursor-pointer"
+        loading="lazy"
+        onClick={onImageClick}
+        onTouchStart={(e) => {
+          handleUserInteraction();
+          onTouchStart(e);
+        }}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      />
+
+      {/* Navigation arrows for desktop */}
+      {photos.length > 1 && (
+        <>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUserInteraction();
+              goToPrevious();
+            }}
+            className="absolute left-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white rounded-full p-2 opacity-0 hover:opacity-100 transition-opacity"
+            aria-label="Previous photo"
+          >
+            <ChevronLeft size={20} />
+          </button>
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              handleUserInteraction();
+              goToNext();
+            }}
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 bg-black/50 text-white rounded-full p-2 opacity-0 hover:opacity-100 transition-opacity"
+            aria-label="Next photo"
+          >
+            <ChevronRight size={20} />
+          </button>
+        </>
+      )}
+
+      {/* Photo indicators and auto-play control */}
+      {photos.length > 1 && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 flex items-center space-x-3">
+          {/* Photo indicators */}
+          <div className="flex space-x-2">
+            {photos.map((_, index) => (
+              <button
+                key={index}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleUserInteraction();
+                  setCurrentIndex(index);
+                }}
+                className={`w-2 h-2 rounded-full transition-colors ${
+                  index === currentIndex ? 'bg-white' : 'bg-white/50'
+                }`}
+                aria-label={`Go to photo ${index + 1}`}
+              />
+            ))}
+          </div>
+
+          {/* Auto-play toggle button */}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              if (isAutoPlaying) {
+                setIsAutoPlaying(false);
+                stopAutoPlay();
+              } else {
+                setIsAutoPlaying(true);
+                startAutoPlay();
+              }
+            }}
+            className="bg-black/50 text-white rounded-full p-1 hover:bg-black/70 transition-colors"
+            aria-label={isAutoPlaying ? "Pause auto-play" : "Start auto-play"}
+          >
+            {isAutoPlaying ? <Pause size={12} /> : <Play size={12} />}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+};
 
 const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => void }) => {
   const [expanded, setExpanded] = useState(false);
@@ -81,13 +286,9 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
   return (
     <article className="relative rounded-xl overflow-hidden shadow-md bg-card animate-fade-in">
       <div className="relative" style={{ height: 545 }}>
-        <img
-          src={post.image}
-          alt={`${post.store} deal visual`}
-          className={`w-full h-full object-cover cursor-pointer ${expanded ? 'blur-[2px]' : ''}`}
-          loading="lazy"
-          onClick={onImageClick}
-        />
+        <div className={`w-full h-full ${expanded ? 'blur-[2px]' : ''}`}>
+          <PhotoCarousel photos={post.photos} onImageClick={onImageClick} />
+        </div>
         {/* Vertical Ribbon */}
         <div className="absolute top-0" style={{ left: '30px' }}>
           <div className="bg-destructive text-destructive-foreground px-3 py-4 shadow-lg"
@@ -142,7 +343,7 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
         {/* Bottom glass panel */}
         <div className={`absolute inset-x-0 bottom-0 p-3 transition-all ${expanded ? 'h-1/2' : 'h-1/4'} glass`}>
           <div className="flex items-center gap-2">
-            <Link to={`/seller/${post.sellerSlug}`} className="text-sm font-bold text-white flex items-center gap-1">
+            <Link to={`/seller/${post.businessId}`} className="text-sm font-bold text-white flex items-center gap-1">
               {post.store}
             </Link>
             <BadgeCheck className="text-white" size={16} fill="green" />
@@ -157,7 +358,7 @@ const FeedPost = ({ post, onImageClick }: { post: Post; onImageClick?: () => voi
             </Button>
           </div>
           <div className="mt-3 flex gap-3 items-start">
-            <Link to={`/seller/${post.sellerSlug}`} className="shrink-0 h-9 w-9 rounded-full bg-white grid place-items-center overflow-hidden">
+            <Link to={`/seller/${post.businessId}`} className="shrink-0 h-9 w-9 rounded-full bg-white grid place-items-center overflow-hidden">
               <img src={post.logoUrl} alt={`${post.store} logo`} className="h-full w-full object-contain" />
             </Link>
             <button className="text-left text-white" onClick={() => setExpanded(e => !e)} aria-expanded={expanded}>
@@ -217,15 +418,17 @@ const Home = () => {
   };
 
   // Transform database post to UI post format
-  const transformPost = (dbPost: PostWithBusiness): Post => {
+  const transformPost = (dbPost: any): Post => {
+    // Handle photos array from the new schema
+    const photos = Array.isArray(dbPost.photos) ? dbPost.photos : [];
+
     return {
       id: dbPost.id,
-      image: dbPost.photo_url,
+      photos: photos,
       offer: dbPost.offer || "Special Offer",
-      store: dbPost.business.name,
+      store: dbPost.business_name || dbPost.business?.name,
       description: dbPost.description || "Check out this amazing deal!",
-      logoUrl: dbPost.business.logo_url || "https://via.placeholder.com/40x40?text=Logo",
-      sellerSlug: generateBusinessSlug(dbPost.business.name),
+      logoUrl: dbPost.business_logo_url || dbPost.business?.logo_url || "https://via.placeholder.com/40x40?text=Logo",
       businessId: dbPost.business_id
     };
   };
@@ -247,7 +450,7 @@ const Home = () => {
       if (searchTerm.trim()) {
         const categoryFilter = categoryId !== 'all' ? categoryId : null;
 
-        const { data, error } = await supabase.rpc('search_posts', {
+        const { data, error } = await (supabase as any).rpc('search_posts', {
           search_term: searchTerm,
           category_filter: categoryFilter,
           result_limit: limit,
@@ -259,15 +462,7 @@ const Home = () => {
         }
 
         // Transform search results to match Post interface
-        const transformedPosts = (data || []).map((result: any): Post => ({
-          id: result.id,
-          image: result.photo_url,
-          offer: result.offer || "Special Offer",
-          store: result.business_name,
-          description: result.description || "Check out this amazing deal!",
-          logoUrl: result.business_logo_url || "https://via.placeholder.com/40x40?text=Logo",
-          sellerSlug: generateBusinessSlug(result.business_name)
-        }));
+        const transformedPosts = (data || []).map(transformPost);
 
         if (append) {
           setPosts(prev => [...prev, ...transformedPosts]);
@@ -279,22 +474,14 @@ const Home = () => {
         setHasMore(transformedPosts.length === limit);
 
       } else {
-        // Regular fetch without search
-        let query = supabase
-          .from('posts')
-          .select(`
-            *,
-            business:businesses(*)
-          `);
+        // Regular fetch without search using the new function
+        const categoryFilter = categoryId !== 'all' ? categoryId : null;
 
-        // Apply category filter if not "all"
-        if (categoryId !== 'all') {
-          query = query.eq('category_id', categoryId);
-        }
-
-        const { data, error } = await query
-          .order('created_at', { ascending: false })
-          .range(offset, offset + limit - 1);
+        const { data, error } = await (supabase as any).rpc('get_posts_with_photos', {
+          category_filter: categoryFilter,
+          result_limit: limit,
+          result_offset: offset
+        });
 
         if (error) {
           throw error;

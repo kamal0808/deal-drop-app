@@ -60,7 +60,7 @@ const App = () => (
                 <Profile />
               </ProtectedRoute>
             } />
-            <Route path="/seller/:sellername" element={
+            <Route path="/seller/:businessId" element={
               <ProtectedRoute>
                 <Seller />
               </ProtectedRoute>

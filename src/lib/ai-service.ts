@@ -20,6 +20,7 @@ export interface SearchResult {
   offer: string | null;
   description: string | null;
   business_name: string;
+  business_id: string;
   business_logo_url: string | null;
   category_name: string | null;
   relevance_score: number;
@@ -280,6 +281,7 @@ export async function searchProducts(searchIntent: SearchIntent): Promise<Search
         offer: business.current_offer,
         description: business.description || `${business.name} - Local business`,
         business_name: business.name,
+        business_id: business.id,
         business_logo_url: business.logo_url,
         category_name: 'Business',
         relevance_score: business.relevance_score || 1.0
@@ -301,7 +303,9 @@ export async function searchProducts(searchIntent: SearchIntent): Promise<Search
         photo_url,
         offer,
         description,
+        business_id,
         business:businesses!inner(
+          id,
           name,
           logo_url
         ),
@@ -324,6 +328,7 @@ export async function searchProducts(searchIntent: SearchIntent): Promise<Search
       offer: post.offer,
       description: post.description,
       business_name: post.business?.name || 'Unknown Business',
+      business_id: post.business?.id || post.business_id || '',
       business_logo_url: post.business?.logo_url || null,
       category_name: post.category?.name || null,
       relevance_score: 1.0 // Default score for fallback

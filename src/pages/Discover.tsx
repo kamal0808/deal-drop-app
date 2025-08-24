@@ -7,7 +7,7 @@ import { useSEO } from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { Tables } from "@/integrations/supabase/types";
-import { generateBusinessSlug } from "@/lib/utils";
+
 import { BusinessCard } from "@/components/BusinessCard";
 
 type Business = Tables<'businesses'>;
@@ -38,8 +38,7 @@ export default function Discover() {
 
   // Handle business navigation
   const handleBusinessClick = (business: Business) => {
-    const businessSlug = generateBusinessSlug(business.name);
-    navigate(`/seller/${businessSlug}`);
+    navigate(`/seller/${business.id}`);
   };
 
   // Search businesses using the search function

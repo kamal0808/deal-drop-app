@@ -5,7 +5,7 @@ import { ChevronRight, Loader2 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate } from "react-router-dom";
 import { useFollowedBusinesses } from "@/hooks/useFollowedBusinesses";
-import { generateBusinessSlug } from "@/lib/utils";
+
 import { Link } from "react-router-dom";
 
 // Removed static followedRetailers array - now using real data from database
@@ -98,7 +98,7 @@ export default function Profile() {
             {followedBusinesses.map((business) => (
               <Link
                 key={business.id}
-                to={`/seller/${generateBusinessSlug(business.name)}`}
+                to={`/seller/${business.id}`}
                 className="w-[90px] h-[90px] rounded-full border overflow-hidden flex-shrink-0 bg-gray-100 hover:scale-105 transition-transform duration-200"
               >
                 <img

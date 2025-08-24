@@ -9,7 +9,7 @@ import { useNavigate, useLocation } from "react-router-dom";
 import { processAIQuery, type SearchResult, type SearchIntent, type VideoContext } from "@/lib/ai-service";
 import { toast } from "sonner";
 import ReactMarkdown from "react-markdown";
-import { generateBusinessSlug } from "@/lib/utils";
+
 import {
   getSessionId,
   getCurrentConversation,
@@ -356,9 +356,8 @@ const LocalitAI = () => {
   };
 
   // Handle business navigation
-  const handleBusinessClick = (businessName: string) => {
-    const businessSlug = generateBusinessSlug(businessName);
-    navigate(`/seller/${businessSlug}`);
+  const handleBusinessClick = (businessId: string) => {
+    navigate(`/seller/${businessId}`);
   };
 
   // Handle post click for full-screen view
@@ -392,7 +391,7 @@ const LocalitAI = () => {
               <div className="flex-1 min-w-0">
                 {/* Business name - clickable for business page */}
                 <button
-                  onClick={() => handleBusinessClick(result.business_name)}
+                  onClick={() => handleBusinessClick(result.business_id)}
                   className="text-xs font-medium text-foreground truncate hover:text-primary transition-colors text-left"
                 >
                   {result.business_name}
@@ -755,7 +754,7 @@ const LocalitAI = () => {
                   <button
                     onClick={() => {
                       setViewerOpen(false);
-                      handleBusinessClick(selectedPost.business_name);
+                      handleBusinessClick(selectedPost.business_id);
                     }}
                     className="text-sm font-medium hover:underline text-left"
                   >
