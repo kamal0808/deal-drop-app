@@ -1,5 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { Heart, MessageCircle, Share2, Play, Pause, Volume2, VolumeX, Sparkles, Loader2 } from "lucide-react";
+
+// YouTube IFrame API types
+declare global {
+  interface Window {
+    YT: any;
+    onYouTubeIframeAPIReady: () => void;
+  }
+}
 import { useSEO } from "@/hooks/useSEO";
 import BottomNav from "@/components/BottomNav";
 import RegionSelector from "@/components/RegionSelector";
@@ -19,10 +27,11 @@ export default function Feed() {
   const [selectedRegionId, setSelectedRegionId] = useState<string | null>(null);
   const [loadedVideos, setLoadedVideos] = useState<Set<number>>(new Set([0])); // Track which videos are loaded
   const [processingVideoId, setProcessingVideoId] = useState<string | null>(null); // Track which video is being processed for AI
+  const [youTubeAPIReady, setYouTubeAPIReady] = useState(false);
   const navigate = useNavigate();
 
   const containerRef = useRef<HTMLDivElement>(null);
-  const videoRefs = useRef<Record<number, HTMLIFrameElement | null>>({});
+  const playersRef = useRef<Record<number, any>>({});
   const scrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   useSEO({
@@ -30,6 +39,77 @@ export default function Feed() {
     description: "Discover trending videos from local businesses and creators.",
     canonical: window.location.origin + "/feed"
   });
+
+  // Load YouTube IFrame API
+  useEffect(() => {
+    if (!window.YT) {
+      const tag = document.createElement('script');
+      tag.src = 'https://www.youtube.com/iframe_api';
+      const firstScriptTag = document.getElementsByTagName('script')[0];
+      firstScriptTag.parentNode?.insertBefore(tag, firstScriptTag);
+
+      window.onYouTubeIframeAPIReady = () => {
+        console.log('🎬 YouTube IFrame API Ready');
+        setYouTubeAPIReady(true);
+      };
+    } else if (window.YT && window.YT.Player) {
+      setYouTubeAPIReady(true);
+    }
+  }, []);
+
+  // Create YouTube player
+  const createPlayer = (index: number, videoId: string) => {
+    if (!youTubeAPIReady || !window.YT || playersRef.current[index]) return;
+
+    const playerId = `player-${index}`;
+    const playerElement = document.getElementById(playerId);
+
+    if (!playerElement) return;
+
+    try {
+      const player = new window.YT.Player(playerId, {
+        height: '100%',
+        width: '100%',
+        videoId: videoId,
+        playerVars: {
+          autoplay: index === 0 ? 1 : 0,
+          mute: 1,
+          controls: 0,
+          showinfo: 0,
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1,
+          loop: 1,
+          playlist: videoId,
+          enablejsapi: 1,
+          wmode: 'transparent'
+        },
+        events: {
+          onReady: (event: any) => {
+            console.log(`🎬 Player ${index} ready`);
+            if (index === 0) {
+              // Auto-unmute first video after a short delay
+              setTimeout(() => {
+                event.target.unMute();
+                setMutedStates(prev => ({ ...prev, 0: false }));
+              }, 1000);
+            }
+          },
+          onStateChange: (event: any) => {
+            const state = event.data;
+            setPlayingStates(prev => ({
+              ...prev,
+              [index]: state === window.YT.PlayerState.PLAYING
+            }));
+          }
+        }
+      });
+
+      playersRef.current[index] = player;
+    } catch (error) {
+      console.error(`Error creating player ${index}:`, error);
+    }
+  };
 
   const loadVideos = async (regionId?: string | null) => {
     setLoading(true);
@@ -49,16 +129,13 @@ export default function Feed() {
       setPlayingStates(initialPlayingStates);
       setMutedStates(initialMutedStates);
 
-      // Auto-unmute the first video after a short delay to comply with autoplay policy
-      if (feedVideos.length > 0) {
-        setTimeout(() => {
-          setMutedStates(prev => ({ ...prev, 0: false }));
-          const firstIframe = videoRefs.current[0];
-          if (firstIframe && feedVideos[0]) {
-            firstIframe.src = `${feedVideos[0].embedUrl}?autoplay=1&mute=0&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&loop=1&playlist=${feedVideos[0].id}&start=0`;
-          }
-        }, 1000); // Unmute after 1 second
-      }
+      // Clear existing players
+      Object.values(playersRef.current).forEach(player => {
+        if (player && player.destroy) {
+          player.destroy();
+        }
+      });
+      playersRef.current = {};
 
       // Preload the second video for smooth scrolling
       if (feedVideos.length > 1) {
@@ -78,12 +155,29 @@ export default function Feed() {
     loadVideos(selectedRegionId);
   }, [selectedRegionId]);
 
-  // Cleanup timeout on unmount
+  // Create players when API is ready and videos are loaded
+  useEffect(() => {
+    if (youTubeAPIReady && videos.length > 0) {
+      loadedVideos.forEach(index => {
+        if (index < videos.length && !playersRef.current[index]) {
+          setTimeout(() => createPlayer(index, videos[index].id), 100 * index);
+        }
+      });
+    }
+  }, [youTubeAPIReady, videos, loadedVideos]);
+
+  // Cleanup timeout and players on unmount
   useEffect(() => {
     return () => {
       if (scrollTimeoutRef.current) {
         clearTimeout(scrollTimeoutRef.current);
       }
+      // Cleanup YouTube players
+      Object.values(playersRef.current).forEach(player => {
+        if (player && player.destroy) {
+          player.destroy();
+        }
+      });
     };
   }, []);
 
@@ -131,12 +225,10 @@ export default function Feed() {
       const videoIndex = Math.round(scrollTop / containerHeight);
 
       if (videoIndex !== currentVideoIndex && videoIndex >= 0 && videoIndex < videos.length) {
-        // Stop the previous video (preserve its mute state)
-        const previousIframe = videoRefs.current[currentVideoIndex];
-        if (previousIframe) {
-          const previousVideo = videos[currentVideoIndex];
-          const previousMuteParam = mutedStates[currentVideoIndex] ? '1' : '0';
-          previousIframe.src = `${previousVideo.embedUrl}?autoplay=0&mute=${previousMuteParam}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1`;
+        // Stop the previous video
+        const previousPlayer = playersRef.current[currentVideoIndex];
+        if (previousPlayer && previousPlayer.pauseVideo) {
+          previousPlayer.pauseVideo();
         }
 
         setCurrentVideoIndex(videoIndex);
@@ -151,17 +243,17 @@ export default function Feed() {
           return newLoaded;
         });
 
-        // Start the current video (unmuted for better UX)
-        const currentIframe = videoRefs.current[videoIndex];
-        if (currentIframe) {
-          const video = videos[videoIndex];
-          // Start muted first (for autoplay compliance), then unmute after a short delay
-          currentIframe.src = `${video.embedUrl}?autoplay=1&mute=1&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&loop=1&playlist=${video.id}&start=0`;
+        // Start the current video
+        const currentPlayer = playersRef.current[videoIndex];
+        if (currentPlayer && currentPlayer.playVideo) {
+          currentPlayer.playVideo();
 
-          // Auto-unmute after a short delay
+          // Auto-unmute after a short delay for better UX
           setTimeout(() => {
-            setMutedStates(prev => ({ ...prev, [videoIndex]: false }));
-            currentIframe.src = `${video.embedUrl}?autoplay=1&mute=0&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&loop=1&playlist=${video.id}&start=0`;
+            if (currentPlayer.unMute) {
+              currentPlayer.unMute();
+              setMutedStates(prev => ({ ...prev, [videoIndex]: false }));
+            }
           }, 500);
         }
 
@@ -180,36 +272,36 @@ export default function Feed() {
   };
 
   const togglePlay = (index: number) => {
+    const player = playersRef.current[index];
+    if (!player) return;
+
     const newPlayingState = !playingStates[index];
     setPlayingStates(prev => ({
       ...prev,
       [index]: newPlayingState
     }));
 
-    // Update iframe src to control playback
-    const iframe = videoRefs.current[index];
-    if (iframe) {
-      const video = videos[index];
-      const autoplayParam = newPlayingState ? '1' : '0';
-      const muteParam = mutedStates[index] ? '1' : '0';
-      iframe.src = `${video.embedUrl}?autoplay=${autoplayParam}&mute=${muteParam}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&loop=1&playlist=${video.id}`;
+    if (newPlayingState) {
+      player.playVideo();
+    } else {
+      player.pauseVideo();
     }
   };
 
   const toggleMute = (index: number) => {
+    const player = playersRef.current[index];
+    if (!player) return;
+
     const newMutedState = !mutedStates[index];
     setMutedStates(prev => ({
       ...prev,
       [index]: newMutedState
     }));
 
-    // Update iframe src to control mute state
-    const iframe = videoRefs.current[index];
-    if (iframe) {
-      const video = videos[index];
-      const autoplayParam = playingStates[index] ? '1' : '0';
-      const muteParam = newMutedState ? '1' : '0';
-      iframe.src = `${video.embedUrl}?autoplay=${autoplayParam}&mute=${muteParam}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&loop=1&playlist=${video.id}`;
+    if (newMutedState) {
+      player.mute();
+    } else {
+      player.unMute();
     }
   };
 
@@ -297,6 +389,13 @@ export default function Feed() {
     }
 
     // Navigate to AI page with video context (including the summary)
+    console.log('🎬 Navigating to AI with video context:', {
+      id: video.databaseId,
+      title: video.title,
+      thumbnailUrl: video.thumbnailUrl,
+      summary: videoSummary
+    });
+
     navigate('/ai', {
       state: {
         videoContext: {
@@ -321,7 +420,7 @@ export default function Feed() {
     return (
       <main className="h-screen flex items-center justify-center bg-black relative">
         {/* Region Selector - Top Left (even during loading) */}
-        <div className="absolute top-4 left-4 z-10">
+        <div className="absolute top-4 left-4 z-[60]">
           <RegionSelector
             selectedRegionId={selectedRegionId}
             onRegionChange={handleRegionChange}
@@ -340,7 +439,7 @@ export default function Feed() {
     return (
       <main className="h-screen flex items-center justify-center bg-black relative">
         {/* Region Selector - Top Left */}
-        <div className="absolute top-4 left-4 z-10">
+        <div className="absolute top-4 left-4 z-[60]">
           <RegionSelector
             selectedRegionId={selectedRegionId}
             onRegionChange={handleRegionChange}
@@ -364,7 +463,7 @@ export default function Feed() {
   return (
     <main className="h-screen bg-black relative overflow-hidden">
       {/* Region Selector - Top Left */}
-      <div className="absolute top-4 left-4 z-10">
+      <div className="absolute top-4 left-4 z-[60]">
         <RegionSelector
           selectedRegionId={selectedRegionId}
           onRegionChange={handleRegionChange}
@@ -386,16 +485,18 @@ export default function Feed() {
           <div
             key={video.id}
             className="h-screen w-full snap-start relative flex items-center justify-center"
+            onClick={(e) => {
+              // Only toggle play if clicking on the video area (not on overlay controls)
+              if (e.target === e.currentTarget) {
+                togglePlay(index);
+              }
+            }}
           >
-            {/* YouTube embed - only load if in loadedVideos set */}
+            {/* YouTube Player - only load if in loadedVideos set */}
             {loadedVideos.has(index) ? (
-              <iframe
-                ref={(el) => { videoRefs.current[index] = el; }}
-                src={`${video.embedUrl}?autoplay=${index === 0 ? '1' : '0'}&mute=1&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&loop=1&playlist=${video.id}&enablejsapi=1`}
-                className="w-full h-full object-cover relative z-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-                style={{ border: 'none' }}
+              <div
+                id={`player-${index}`}
+                className="w-full h-full pointer-events-none"
               />
             ) : (
               // Placeholder for unloaded videos
@@ -410,7 +511,7 @@ export default function Feed() {
             )}
 
             {/* Overlay controls and info */}
-            <div className="absolute inset-0 pointer-events-none z-40">
+            <div className="absolute inset-0 pointer-events-none z-[100]">
               {/* Top gradient overlay */}
               <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-black/50 to-transparent" />
               
@@ -443,12 +544,16 @@ export default function Feed() {
               </div>
 
               {/* Action buttons - right side */}
-              <div className="absolute bottom-24 right-4 flex flex-col gap-6 pointer-events-auto z-50">
+              <div className="absolute bottom-24 right-4 flex flex-col gap-6 pointer-events-auto z-[110]">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 backdrop-blur-sm text-white hover:from-purple-600 hover:to-pink-600 relative z-50 disabled:from-purple-400 disabled:to-pink-400 disabled:cursor-not-allowed"
-                  onClick={() => handleAISearch(video)}
+                  className="h-12 w-12 rounded-full bg-gradient-to-r from-purple-500 to-pink-500 backdrop-blur-sm text-white hover:from-purple-600 hover:to-pink-600 relative z-[110] disabled:from-purple-400 disabled:to-pink-400 disabled:cursor-not-allowed pointer-events-auto"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleAISearch(video);
+                  }}
                   disabled={processingVideoId === video.databaseId}
                   title={
                     processingVideoId === video.databaseId
@@ -466,8 +571,12 @@ export default function Feed() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-50"
-                  onClick={() => handleLike(video.id)}
+                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-[110] pointer-events-auto"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleLike(video.id);
+                  }}
                 >
                   <Heart className="h-6 w-6" />
                 </Button>
@@ -475,8 +584,12 @@ export default function Feed() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-50"
-                  onClick={() => handleComment(video.id)}
+                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-[110] pointer-events-auto"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleComment(video.id);
+                  }}
                 >
                   <MessageCircle className="h-6 w-6" />
                 </Button>
@@ -484,20 +597,28 @@ export default function Feed() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-50"
-                  onClick={() => handleShare(video)}
+                  className="h-12 w-12 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-[110] pointer-events-auto"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    handleShare(video);
+                  }}
                 >
                   <Share2 className="h-6 w-6" />
                 </Button>
               </div>
 
               {/* Play/Pause button - center */}
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-auto z-30">
+              <div className="absolute inset-0 flex items-center justify-center pointer-events-auto z-[105]">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 opacity-0 hover:opacity-100 transition-opacity relative z-40"
-                  onClick={() => togglePlay(index)}
+                  className="h-16 w-16 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 opacity-0 hover:opacity-100 transition-opacity relative z-[105] pointer-events-auto"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    togglePlay(index);
+                  }}
                 >
                   {playingStates[index] ? (
                     <Pause className="h-8 w-8" />
@@ -508,12 +629,16 @@ export default function Feed() {
               </div>
 
               {/* Mute button - top right */}
-              <div className="absolute top-4 right-4 pointer-events-auto z-30">
+              <div className="absolute top-4 right-4 pointer-events-auto z-[105]">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-40"
-                  onClick={() => toggleMute(index)}
+                  className="h-10 w-10 rounded-full bg-white/20 backdrop-blur-sm text-white hover:bg-white/30 relative z-[105] pointer-events-auto"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleMute(index);
+                  }}
                 >
                   {mutedStates[index] ? (
                     <VolumeX className="h-5 w-5" />

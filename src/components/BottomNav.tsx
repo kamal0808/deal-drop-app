@@ -24,7 +24,7 @@ export default function BottomNav({ active }: { active?: string }) {
   };
 
   return (
-    <nav aria-label="Primary" className="fixed bottom-3 inset-x-3 rounded-2xl bg-background/90 backdrop-blur border shadow-lg px-2 py-2">
+    <nav aria-label="Primary" className="fixed bottom-3 inset-x-3 rounded-2xl bg-background/90 backdrop-blur border shadow-lg px-2 py-2 z-[1000]">
       <ul className="grid grid-cols-6 gap-1">
         {items.map(({ to, label, Icon }) => {
           const isActive = pathname === to || active === label.toLowerCase() || (active === 'ai' && label === 'Localit AI');

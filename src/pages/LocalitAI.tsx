@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles, Loader2, ArrowLeft } from "lucide-react";
+import { Send, Bot, User, Sparkles, Loader2, ArrowLeft, ChevronUp, ChevronDown } from "lucide-react";
 import { useSEO } from "@/hooks/useSEO";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ScrollArea } from "@/components/ui/scroll-area";
+
 import { Badge } from "@/components/ui/badge";
 import { useNavigate, useLocation } from "react-router-dom";
 import { processAIQuery, type SearchResult, type SearchIntent, type VideoContext } from "@/lib/ai-service";
@@ -65,8 +65,12 @@ const LocalitAI = () => {
   const [selectedPost, setSelectedPost] = useState<SearchResult | null>(null);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUserMessageIndex, setCurrentUserMessageIndex] = useState(-1);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const messageRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
+  const longPressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const scrollSpeedRef = useRef<number>(1);
 
   // Get the previous page from location state or default to home
   const previousPage = location.state?.from || '/home';
@@ -111,37 +115,122 @@ const LocalitAI = () => {
 
   // Handle video context when component loads
   useEffect(() => {
-    if (videoContext) {
-      // Create a video context message and auto-send the default query
-      const videoMessage: Message = {
-        id: 'video-context',
-        type: 'user',
-        content: 'Find me stores or products mentioned in this video',
-        timestamp: new Date(),
+    if (videoContext && !isLoading) {
+      console.log('🎬 Video context received:', videoContext);
+
+      const defaultQuery = 'Find me stores or products mentioned in this video';
+
+      // Create and send the video context message immediately
+      const sendVideoContextMessage = async () => {
+        const userMessage: Message = {
+          id: 'video-context',
+          type: 'user',
+          content: defaultQuery,
+          timestamp: new Date(),
+        };
+
+        setMessages(prev => [...prev, userMessage]);
+        setIsTyping(true);
+
+        try {
+          // Ensure we have a conversation ID
+          let currentConversationId = conversationId;
+          if (!currentConversationId) {
+            const sessionId = getSessionId();
+            currentConversationId = await createConversation(sessionId, defaultQuery);
+            if (currentConversationId) {
+              setConversationId(currentConversationId);
+            }
+          }
+
+          // Save user message to database
+          if (currentConversationId) {
+            await saveMessage(currentConversationId, 'user', defaultQuery);
+            await updateConversationTimestamp(currentConversationId);
+          }
+
+          // Process query with AI (include video context)
+          const aiResponse = await processAIQuery(defaultQuery, videoContext);
+
+          const aiMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            type: 'ai',
+            content: aiResponse.content,
+            timestamp: new Date(),
+            searchResults: aiResponse.searchResults,
+          };
+
+          setMessages(prev => [...prev, aiMessage]);
+
+          // Save AI message to database
+          if (currentConversationId) {
+            await saveMessage(
+              currentConversationId,
+              'ai',
+              aiResponse.content,
+              aiResponse.searchResults,
+              undefined, // searchIntent
+              thinkingMessages // Store the thinking messages used
+            );
+            await updateConversationTimestamp(currentConversationId);
+          }
+
+        } catch (error) {
+          console.error('Error processing video context AI query:', error);
+          toast.error("Sorry, I'm having trouble processing the video. Please try again!");
+
+          const errorMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            type: 'ai',
+            content: "I'm experiencing some technical difficulties analyzing this video. Please try your search again!",
+            timestamp: new Date(),
+          };
+
+          setMessages(prev => [...prev, errorMessage]);
+        } finally {
+          setIsTyping(false);
+        }
       };
 
-      // Add the video context message to show the video thumbnail
-      setMessages(prev => [...prev, videoMessage]);
-
-      // Set the input value to the default query
-      setInputValue('Find me stores or products mentioned in this video');
-
-      // Auto-send the query after a short delay
+      // Send the message after a short delay
       setTimeout(() => {
-        handleSendMessage();
+        sendVideoContextMessage();
       }, 500);
     }
-  }, [videoContext]);
+  }, [videoContext, isLoading, conversationId]);
 
   // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      const scrollContainer = scrollAreaRef.current.querySelector('[data-radix-scroll-area-viewport]');
-      if (scrollContainer) {
-        scrollContainer.scrollTop = scrollContainer.scrollHeight;
+    const scrollToBottom = () => {
+      if (scrollAreaRef.current) {
+        console.log('📜 Scrolling to bottom - scrollHeight:', scrollAreaRef.current.scrollHeight, 'clientHeight:', scrollAreaRef.current.clientHeight);
+        scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
       }
-    }
+    };
+
+    // Use requestAnimationFrame to ensure DOM is updated
+    requestAnimationFrame(() => {
+      setTimeout(scrollToBottom, 50);
+    });
   }, [messages]);
+
+  // Scroll to bottom on initial load
+  useEffect(() => {
+    if (!isLoading) {
+      const scrollToBottom = () => {
+        if (scrollAreaRef.current) {
+          console.log('📜 Initial scroll to bottom - scrollHeight:', scrollAreaRef.current.scrollHeight, 'clientHeight:', scrollAreaRef.current.clientHeight);
+          scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+        }
+      };
+
+      // Multiple attempts to ensure it works
+      setTimeout(scrollToBottom, 100);
+      setTimeout(scrollToBottom, 300);
+      setTimeout(scrollToBottom, 500);
+      setTimeout(scrollToBottom, 1000);
+    }
+  }, [isLoading]);
 
   // Keyboard support for viewer
   useEffect(() => {
@@ -164,6 +253,15 @@ const LocalitAI = () => {
       document.body.style.overflow = 'unset';
     };
   }, [viewerOpen]);
+
+  // Cleanup long press timer on unmount
+  useEffect(() => {
+    return () => {
+      if (longPressTimerRef.current) {
+        clearTimeout(longPressTimerRef.current);
+      }
+    };
+  }, []);
 
   // Simulate AI thinking with rotating messages
   useEffect(() => {
@@ -328,8 +426,78 @@ const LocalitAI = () => {
     navigate(previousPage);
   };
 
+  // Get user messages for navigation
+  const getUserMessages = () => {
+    return messages.filter(msg => msg.type === 'user');
+  };
+
+  // Navigate to previous/next user message
+  const navigateToUserMessage = (direction: 'up' | 'down') => {
+    const userMessages = getUserMessages();
+    if (userMessages.length === 0) return;
+
+    let newIndex = currentUserMessageIndex;
+
+    if (direction === 'up') {
+      newIndex = currentUserMessageIndex <= 0 ? userMessages.length - 1 : currentUserMessageIndex - 1;
+    } else {
+      newIndex = currentUserMessageIndex >= userMessages.length - 1 ? 0 : currentUserMessageIndex + 1;
+    }
+
+    setCurrentUserMessageIndex(newIndex);
+
+    // Scroll to the message
+    const targetMessage = userMessages[newIndex];
+    const messageElement = messageRefs.current[targetMessage.id];
+    if (messageElement && scrollAreaRef.current) {
+      messageElement.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center'
+      });
+    }
+
+    // Haptic feedback
+    if ('vibrate' in navigator) {
+      navigator.vibrate(50);
+    }
+  };
+
+  // Handle long press for fast scrolling
+  const handleLongPressStart = (direction: 'up' | 'down') => {
+    scrollSpeedRef.current = 1;
+
+    const scroll = () => {
+      if (scrollAreaRef.current) {
+        const scrollAmount = direction === 'up' ? -scrollSpeedRef.current * 10 : scrollSpeedRef.current * 10;
+        scrollAreaRef.current.scrollTop += scrollAmount;
+
+        // Exponentially increase speed
+        scrollSpeedRef.current = Math.min(scrollSpeedRef.current * 1.1, 20);
+      }
+
+      longPressTimerRef.current = setTimeout(scroll, 50);
+    };
+
+    // Start after 500ms hold
+    longPressTimerRef.current = setTimeout(() => {
+      // Haptic feedback for long press
+      if ('vibrate' in navigator) {
+        navigator.vibrate([100, 50, 100]);
+      }
+      scroll();
+    }, 500);
+  };
+
+  const handleLongPressEnd = () => {
+    if (longPressTimerRef.current) {
+      clearTimeout(longPressTimerRef.current);
+      longPressTimerRef.current = null;
+    }
+    scrollSpeedRef.current = 1;
+  };
+
   return (
-    <main className="flex flex-col h-screen max-w-md mx-auto bg-background">
+    <main className="flex flex-col h-screen w-full max-w-md mx-auto bg-background">
       {/* Header */}
       <header className="flex items-center gap-3 p-4 border-b bg-card">
         <Button
@@ -353,8 +521,15 @@ const LocalitAI = () => {
       </header>
 
       {/* Messages */}
-      <ScrollArea ref={scrollAreaRef} className="flex-1 p-4">
-        <div className="space-y-4">
+      <div
+        ref={scrollAreaRef}
+        className="flex-1 overflow-y-auto overflow-x-hidden bg-background"
+        style={{
+          minHeight: 0, // Important for flex child to be scrollable
+          maxHeight: '100%'
+        }}
+      >
+        <div className="p-4 space-y-4 min-h-full">
           {isLoading ? (
             // Loading state
             <div className="flex items-center justify-center py-8">
@@ -364,101 +539,161 @@ const LocalitAI = () => {
               </div>
             </div>
           ) : (
-            messages.map((message) => (
-            <div
-              key={message.id}
-              className={`flex gap-3 ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
-            >
-              {message.type === 'ai' && (
-                <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                  <Bot className="h-4 w-4 text-white" />
-                </div>
-              )}
-              
-              <div
-                className={`max-w-[80%] rounded-2xl px-4 py-3 ${
-                  message.type === 'user'
-                    ? 'bg-primary text-primary-foreground ml-auto'
-                    : 'bg-muted'
-                }`}
-              >
-                {message.type === 'user' ? (
-                  <div>
-                    {/* Show video thumbnail if this is a video context message */}
-                    {message.id === 'video-context' && videoContext && (
-                      <div className="mb-3 p-3 bg-muted/50 rounded-lg border">
-                        <div className="flex items-center gap-3">
-                          <img
-                            src={videoContext.thumbnailUrl}
-                            alt={videoContext.title}
-                            className="w-16 h-12 object-cover rounded"
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-xs font-medium text-foreground truncate">
-                              {videoContext.title}
-                            </p>
-                            <p className="text-xs text-muted-foreground">
-                              Video from feed
-                            </p>
+            messages.map((message) => {
+              // Debug logging
+              if (message.id === 'video-context') {
+                console.log('🖼️ Rendering video context message:', message.id, 'videoContext:', videoContext);
+              }
+
+              return (
+                <div
+                  key={message.id}
+                  ref={(el) => { messageRefs.current[message.id] = el; }}
+                  className="grid grid-cols-12 gap-2 items-end"
+                >
+                  {message.type === 'user' ? (
+                    // USER MESSAGE - Right aligned (columns 3-12)
+                    <>
+                      <div className="col-span-2"></div>
+                      <div className="col-span-9 flex justify-end">
+                        <div className="bg-primary text-primary-foreground rounded-2xl px-3 py-2 max-w-full break-words">
+                          {/* Show video thumbnail if this is a video context message */}
+                          {message.id === 'video-context' && videoContext && (
+                            <div className="mb-2 p-2 bg-black/10 rounded border border-white/20">
+                              <div className="flex items-center gap-2">
+                                <img
+                                  src={videoContext.thumbnailUrl}
+                                  alt={videoContext.title}
+                                  className="w-8 h-6 object-cover rounded flex-shrink-0"
+                                  onError={(e) => {
+                                    console.error('Failed to load video thumbnail:', videoContext.thumbnailUrl);
+                                    e.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                                <div className="min-w-0 flex-1">
+                                  <p className="text-xs font-medium truncate">
+                                    {videoContext.title}
+                                  </p>
+                                  <p className="text-xs opacity-70">
+                                    Video from feed
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+                          <div className="text-sm leading-relaxed">
+                            {message.content}
+                          </div>
+                          <div className="text-xs opacity-70 mt-1">
+                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                           </div>
                         </div>
                       </div>
-                    )}
-                    <p className="text-sm whitespace-pre-line">{message.content}</p>
-                  </div>
-                ) : (
-                  <div className="text-sm prose prose-sm max-w-none">
-                    <ReactMarkdown
-                      components={{
-                        p: ({ children }) => <p className="mb-2 last:mb-0">{children}</p>,
-                        strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
-                        em: ({ children }) => <em className="italic">{children}</em>,
-                        ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
-                        ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
-                        li: ({ children }) => <li className="mb-1">{children}</li>,
-                      }}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
-                  </div>
-                )}
-                {message.searchResults && message.searchResults.length > 0 && (
-                  <SearchResultsDisplay results={message.searchResults} />
-                )}
-                <p className="text-xs opacity-70 mt-1">
-                  {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                </p>
-              </div>
-
-              {message.type === 'user' && (
-                <div className="h-8 w-8 rounded-full bg-primary flex items-center justify-center flex-shrink-0">
-                  <User className="h-4 w-4 text-primary-foreground" />
+                      <div className="col-span-1 flex justify-center">
+                        <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center">
+                          <User className="w-4 h-4 text-primary-foreground" />
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    // AI MESSAGE - Left aligned (columns 1-10)
+                    <>
+                      <div className="col-span-1 flex justify-center">
+                        <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                          <Bot className="w-4 h-4 text-white" />
+                        </div>
+                      </div>
+                      <div className="col-span-9">
+                        <div className="bg-muted rounded-2xl px-3 py-2 max-w-full break-words">
+                          <div className="text-sm prose prose-sm max-w-none">
+                            <ReactMarkdown
+                              components={{
+                                p: ({ children }) => <p className="mb-2 last:mb-0 break-words">{children}</p>,
+                                strong: ({ children }) => <strong className="font-semibold text-foreground">{children}</strong>,
+                                em: ({ children }) => <em className="italic">{children}</em>,
+                                ul: ({ children }) => <ul className="list-disc list-inside mb-2">{children}</ul>,
+                                ol: ({ children }) => <ol className="list-decimal list-inside mb-2">{children}</ol>,
+                                li: ({ children }) => <li className="mb-1 break-words">{children}</li>,
+                              }}
+                            >
+                              {message.content}
+                            </ReactMarkdown>
+                          </div>
+                          {message.searchResults && message.searchResults.length > 0 && (
+                            <div className="mt-2">
+                              <SearchResultsDisplay results={message.searchResults} />
+                            </div>
+                          )}
+                          <div className="text-xs opacity-70 mt-1">
+                            {message.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="col-span-2"></div>
+                    </>
+                  )}
                 </div>
-              )}
-            </div>
-            ))
+              );
+            })
           )}
 
           {/* Thinking indicator */}
           {isTyping && (
-            <div className="flex gap-3 justify-start">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0">
-                <Loader2 className="h-4 w-4 text-white animate-spin" />
-              </div>
-              <div className="bg-muted rounded-2xl px-4 py-3 max-w-[80%]">
-                <p className="text-sm text-muted-foreground">
-                  {thinkingMessages[currentThinkingMessage]}
-                </p>
-                <div className="flex gap-1 mt-2">
-                  <div className="w-2 h-2 bg-purple-500/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                  <div className="w-2 h-2 bg-purple-500/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                  <div className="w-2 h-2 bg-purple-500/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+            <div className="grid grid-cols-12 gap-2 items-end">
+              <div className="col-span-1 flex justify-center">
+                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center">
+                  <Loader2 className="w-4 h-4 text-white animate-spin" />
                 </div>
               </div>
+              <div className="col-span-9">
+                <div className="bg-muted rounded-2xl px-3 py-2">
+                  <p className="text-sm text-muted-foreground">
+                    {thinkingMessages[currentThinkingMessage]}
+                  </p>
+                  <div className="flex gap-1 mt-2">
+                    <div className="w-2 h-2 bg-purple-500/60 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
+                    <div className="w-2 h-2 bg-purple-500/60 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
+                    <div className="w-2 h-2 bg-purple-500/60 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
+                  </div>
+                </div>
+              </div>
+              <div className="col-span-2"></div>
             </div>
           )}
         </div>
-      </ScrollArea>
+      </div>
+
+      {/* Navigation Buttons */}
+      {getUserMessages().length > 0 && (
+        <div className="absolute bottom-20 right-4 flex flex-col gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100"
+            onMouseDown={() => handleLongPressStart('up')}
+            onMouseUp={handleLongPressEnd}
+            onMouseLeave={handleLongPressEnd}
+            onTouchStart={() => handleLongPressStart('up')}
+            onTouchEnd={handleLongPressEnd}
+            onClick={() => navigateToUserMessage('up')}
+          >
+            <ChevronUp className="h-4 w-4" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 bg-background/80 backdrop-blur-sm border border-border/50 text-muted-foreground hover:text-foreground opacity-60 hover:opacity-100"
+            onMouseDown={() => handleLongPressStart('down')}
+            onMouseUp={handleLongPressEnd}
+            onMouseLeave={handleLongPressEnd}
+            onTouchStart={() => handleLongPressStart('down')}
+            onTouchEnd={handleLongPressEnd}
+            onClick={() => navigateToUserMessage('down')}
+          >
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
 
       {/* Input */}
       <div className="p-4 border-t bg-card">
