@@ -7,7 +7,7 @@ export default function ComingSoon({ title, path }: { title: string; path: strin
     <main className="min-h-screen flex items-center justify-center">
       <section className="text-center px-6">
         <h1 className="text-2xl font-semibold mb-2">{title}</h1>
-        <p className="text-muted-foreground">Coming soon</p>
+        <p className="text-muted-foreground">Coming soon here</p>
       </section>
       <BottomNav />
     </main>
