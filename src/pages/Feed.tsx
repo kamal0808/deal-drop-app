@@ -4,6 +4,8 @@ import BottomNav from "@/components/BottomNav";
 import RegionSelector from "@/components/RegionSelector";
 import VerticalCategoryMenu from "@/components/VerticalCategoryMenu";
 import VideoItem from "@/components/VideoItem";
+import ScratchCard from "@/components/ScratchCard";
+import { getRandomCoupon } from "@/data/mockCoupons";
 
 // Custom hooks
 import { useYouTubeAPI } from "@/hooks/useYouTubeAPI";
@@ -32,7 +34,10 @@ export default function Feed() {
     selectedRegionId,
     selectedCategoryId,
     handleRegionChange,
-    handleCategorySelect
+    handleCategorySelect,
+    getTotalItems,
+    isScratchCardIndex,
+    getVideoIndexFromTotal
   } = useFeedData();
 
   const {
@@ -160,26 +165,47 @@ export default function Feed() {
           scrollBehavior: 'smooth'
         }}
       >
-        {videos.map((video, index) => (
-          <VideoItem
-            key={video.id}
-            video={video}
-            index={index}
-            isLoaded={loadedVideos.has(index)}
-            isPreloaded={preloadedVideosSet.has(index)}
-            isPlaying={playingStates[index] || false}
-            isMuted={mutedStates[index] || true}
-            userMutePreference={userMutePreference}
-            processingVideoId={processingVideoId}
-            onTogglePlay={(idx) => togglePlay(idx, playersRef)}
-            onToggleMute={(idx) => toggleMute(idx, playersRef)}
-            onLike={handleLike}
-            onComment={handleComment}
-            onShare={handleShare}
-            onAISearch={(video) => handleAISearch(video, processingVideoId, setProcessingVideoId, setVideos)}
-            onCategoryMenuToggle={handleCategoryMenuToggle}
-          />
-        ))}
+        {videos.map((video, index) => {
+          const items = [];
+
+          // Add the video item
+          items.push(
+            <VideoItem
+              key={video.id}
+              video={video}
+              index={index}
+              isLoaded={loadedVideos.has(index)}
+              isPreloaded={preloadedVideosSet.has(index)}
+              isPlaying={playingStates[index] || false}
+              isMuted={mutedStates[index] || true}
+              userMutePreference={userMutePreference}
+              processingVideoId={processingVideoId}
+              onTogglePlay={(idx) => togglePlay(idx, playersRef)}
+              onToggleMute={(idx) => toggleMute(idx, playersRef)}
+              onLike={handleLike}
+              onComment={handleComment}
+              onShare={handleShare}
+              onAISearch={(video) => handleAISearch(video, processingVideoId, setProcessingVideoId, setVideos)}
+              onCategoryMenuToggle={handleCategoryMenuToggle}
+            />
+          );
+
+          // Add scratch card after every 5th video (index 4, 9, 14, etc.)
+          if ((index + 1) % 5 === 0 && index < videos.length - 1) {
+            const coupon = getRandomCoupon();
+            items.push(
+              <ScratchCard
+                key={`scratch-${index}`}
+                coupon={coupon}
+                onScratchComplete={() => {
+                  console.log('Scratch card completed!');
+                }}
+              />
+            );
+          }
+
+          return items;
+        })}
       </div>
 
       {/* Vertical Category Menu */}
